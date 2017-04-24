@@ -254,6 +254,10 @@ The search API also accepts MD5 and SHA file hashes, filenames, comments etc.
 * [Fame](https://github.com/certsocietegenerale/fame)
 * [TheHive](https://github.com/CERT-BDF/TheHive)
 
+# Credits
+
+* Thanks to [Pedram Amini](https://github.com/pedramamini) for a first wrapper implementation!
+
 # Links
 
 * [Joe Sandbox Cloud](https://www.joesecurity.org/joe-sandbox-cloud)

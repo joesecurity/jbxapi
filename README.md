@@ -9,9 +9,9 @@ So far the following actions are implemented:
 * Check if Joe Sandbox Cloud is available
 * Check queue size
 * List all analysis machines
-* Submit sample
-* Submit sample with cookbook
-* Check status of a analysis
+* Submit a sample
+* Submit a sample with cookbook
+* Check the status of an analysis
 * Download analysis reports
 * List all analyses
 * Search for analyses 
@@ -19,11 +19,11 @@ So far the following actions are implemented:
 * Query daily and monthly quota
 * Query account type
 
-The API is implemented as a Python class "joe_api" as well as a command line client. joe_api can be imported into your project. joe_api contains less than 300 LOC and is very simple.  
+The API is implemented as a Python class "joe_api" that you can call on the command line or import into your project. joe_api contains less than 300 LOC and is very concise and easy to understand.  
 
 # License
 
-Code is developed in Python and licensed under MIT.
+The code is written in Python and licensed under MIT.
 
 # Requirements
 
@@ -32,7 +32,7 @@ Code is developed in Python and licensed under MIT.
 
 # Install
 
-Add your API key and accept the Joe Sandbox Cloud terms and condition:
+Add your API key and accept the Joe Sandbox Cloud terms and conditions:
 
 ```python
 # APIKEY, to generate goto user settings - API key
@@ -87,7 +87,7 @@ jbxapi.py status 265270
 }
 ```
 
-Check for the field "status" = "finished". Once finished you can download various reports and analysis artifacts:
+Check for the field "status" = "finished". Once the status is "finished" you can download various reports and analysis artifacts:
 
 * HTML
 * PDF
@@ -209,9 +209,9 @@ C:\Users\admin\Desktop>python jbxapi.py report 262018
 }
 ```
 
-Note, not all reports are in JSON format. 
+Please note that not all reports are in JSON format. 
 
-Search for analysis:
+Search for an analysis:
 
 ```json
 jbxapi.py search docx
@@ -246,7 +246,7 @@ jbxapi.py search docx
         "numberofruns": 2,
 ```
 
-The search API also accepts MD5, SHA, filenames, comments etc.
+The search API also accepts MD5 and SHA file hashes, filenames, comments etc.
 
 # Existing Integrations
 

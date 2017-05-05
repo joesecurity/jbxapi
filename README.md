@@ -1,4 +1,4 @@
-![JoeSandboxCloud](https://raw.githubusercontent.com/joesecurity/joesandboxcloudapi/master/img/cloudlogo.png)
+![JoeSandboxCloud](https://raw.githubusercontent.com/joesecurity/joesandboxcloudapi/master/img/logo.png)
 
 # API Wrapper
 

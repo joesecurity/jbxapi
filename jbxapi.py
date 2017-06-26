@@ -1,3 +1,5 @@
+#!/usr/bin/env python2
+
 # Joe Sandbox API wrapper.
 # License: MIT
 # Copyright Joe Security 2017
@@ -10,6 +12,12 @@ import time
 import random
 import getpass
 import datetime
+
+try:
+	import argparse
+except ImportError:
+	print "Error: Cannot import 'argparse'. Please upgrade to Python 2.7 or install it via pip."
+	sys.exit()
 
 try:
 	import requests
@@ -41,12 +49,13 @@ class joe_api:
 	"""
 
 	####################################################################################################################
-	def __init__ (self, apikey, verify_ssl=True):
+	def __init__ (self, apikey, verify_ssl=True, apiurl=API_URL):
 		"""
 		Initialize the interface to Joe Sandbox API with apikey.
 		"""
 
-		self.apikey   	= apikey
+		self.apikey	   = apikey
+		self.apiurl = apiurl
 		self.verify_ssl = verify_ssl
 
 
@@ -57,10 +66,10 @@ class joe_api:
 
 		@type  api:		str
 		@param api:		API to call.
-		@type  params: 	dict
-		@param params: 	Optional parameters for API.
-		@type  files:  	dict
-		@param files:  	Optional dictionary of files for multipart post.
+		@type  params:	 dict
+		@param params:	 Optional parameters for API.
+		@type  files:	  dict
+		@param files:	  Optional dictionary of files for multipart post.
 
 		@rtype:  requests.response.
 		@return: Response object.
@@ -83,7 +92,7 @@ class joe_api:
 		# make up to three attempts to dance with the API, use a jittered exponential back-off delay
 		for i in xrange(3):
 			try:
-				return requests.post(API_URL + api, data=params, files=files, verify=self.verify_ssl)
+				return requests.post(self.apiurl + api, data=params, files=files, verify=self.verify_ssl)
 
 			# 0.4, 1.6, 6.4, 25.6, ...
 			except:
@@ -159,45 +168,46 @@ class joe_api:
 
 
 	####################################################################################################################
-	def analyze (self, handle, url, systems="", inet=True, scae=False, dec=False, ssl=False, filter=False, hyper=False, cache_md5=False, ais=False, vbainstr=False, officepw="", resubmit_dropped=False, comments="", sendoncomplete=False, exporttojbxview=False):
+	def analyze (self, handle, url, systems="", inet=True, scae=False, dec=False, ssl=False, filter=False, hyper=False, cache_sha256=False, ais=False, vbainstr=False, officepw="", resubmit_dropped=False, comments="", sendoncomplete=False, exporttojbxview=False):
+		pass
    
 		"""
 		Submit a file for analysis.
 
-		@type  handle:   			File handle
-		@param handle:  			Handle to file to upload for analysis.
-		@type  url:  				str
-		@param url: 				URL to analyze.
-		@type  systems:  			str
-		@param systems: 			Comma separated list of systems to run sample on.
-		@type  inet:	 			bool
-		@param inet:	 			Raise this flag to allow Internet connectivity for sample.
-		@type  scae:	 			bool
-		@param scae:	 			Raise this flag to enable Static Code Analysis Engine.
-		@type  dec:	 				bool
-		@param dec:	 				Raise this flag to enable Hybrid Decompilation @see https://www.joesecurity.org/joe-sandbox-dec.
-		@type  ssl:					bool
-		@param ssl:					Raise this flag to enable HTTPS inspection.
-		@type  filter:				bool
-		@param filter:				Raise this flag to enable Joe Sandbox Filter @see https://www.joesecurity.org/joe-sandbox-filter.
+		@type  handle:			   File handle
+		@param handle:			  Handle to file to upload for analysis.
+		@type  url:				  str
+		@param url:				 URL to analyze.
+		@type  systems:			  str
+		@param systems:			 Comma separated list of systems to run sample on.
+		@type  inet:				 bool
+		@param inet:				 Raise this flag to allow Internet connectivity for sample.
+		@type  scae:				 bool
+		@param scae:				 Raise this flag to enable Static Code Analysis Engine.
+		@type  dec:				  bool
+		@param dec:				  Raise this flag to enable Hybrid Decompilation @see https://www.joesecurity.org/joe-sandbox-dec.
+		@type  ssl:				  bool
+		@param ssl:				  Raise this flag to enable HTTPS inspection.
+		@type  filter:			   bool
+		@param filter:			   Raise this flag to enable Joe Sandbox Filter @see https://www.joesecurity.org/joe-sandbox-filter.
 		@type  hyper:				bool
 		@param hyper:				Raise this flag to enable Hyper Mode. Hyper Mode focus on speed versus deep analysis.
-		@type exporttojbxview:		bool
-		@param exporttojbxview		Raise the flag to enable export of analysis report(s) to Joe Sandbox View.
-		@type  cache_md5:  			bool
-		@param cache_md5:  			Raise this flag to check if an analysis with the same sample exists, if no analysis is done.
-		@type  ais:  				bool
-		@param ais:  				Raise this flag to enable Adaptive Internet Simulation @see https://www.joesecurity.org/joe-sandbox-ais. Only available in Joe Sandbox Cloud and Ultimate.
-		@type  vbainstr: 			bool
-		@param vbainstr: 			Raise this flag to enable VBA instrumentation.
-		@type  officepw: 			string
-		@param officepw: 			Sets a password for encrypted Microsoft Office documents.
-		@type  resubmit_dropped: 	bool
-		@param resubmit_dropped: 	Auto submit dropped non executed PE files.
-		@type  comments: 			str
-		@param comments: 			Comments to store with sample entry.
-		@type  sendoncomplete: 		int
-		@param sendoncomplete: 		Send an email on analysis complete.
+		@type exporttojbxview:	   bool
+		@param exporttojbxview	   Raise the flag to enable export of analysis report(s) to Joe Sandbox View.
+		@type  cache_sha256:		 bool
+		@param cache_sha256:		 Raise this flag to check if an analysis with the same sample exists; if so do not re-analyze.
+		@type  ais:				  bool
+		@param ais:				  Raise this flag to enable Adaptive Internet Simulation @see https://www.joesecurity.org/joe-sandbox-ais. Only available in Joe Sandbox Cloud and Ultimate.
+		@type  vbainstr:			 bool
+		@param vbainstr:			 Raise this flag to enable VBA instrumentation.
+		@type  officepw:			 string
+		@param officepw:			 Sets a password for encrypted Microsoft Office documents.
+		@type  resubmit_dropped:	 bool
+		@param resubmit_dropped:	 Auto submit dropped non executed PE files.
+		@type  comments:			 str
+		@param comments:			 Comments to store with sample entry.
+		@type  sendoncomplete:		 int
+		@param sendoncomplete:		 Send an email on analysis complete.
 
 		@rtype:  dict
 		@return: Dictionary of system identifier and associated webids.
@@ -248,10 +258,10 @@ class joe_api:
 		else:
 			export_to_jbxview = "0"
 		
-		if cache_md5:
-			cache_md5 = "1"
+		if cache_sha256:
+			cache_sha256 = "1"
 		else:
-			cache_md5 = "0"
+			cache_sha256 = "0"
 			
 		if ais:
 			ais = "1"
@@ -289,13 +299,13 @@ class joe_api:
 			"filter"   : filter,
 			"hyper"	: hyper,
 			"export_to_jbxview": export_to_jbxview,
-			"cache_md5"	: cache_md5,
+			"cache_sha256"	: cache_sha256,
 			"ais"	  : ais,
 			"vbainstr" : vbainstr,
 			"officepw" : officepw,
 			"resubmit_dropped" : resubmit_dropped,
 			"send_on_complete" : send_on_complete,
-			"type"	 	: type,
+			"type"		 : type,
 			"comments" : comments
 		}
 
@@ -325,7 +335,10 @@ class joe_api:
 
 		#print response
 
-		return json.loads(response.content)
+		try:
+			return json.loads(response.content)
+		except ValueError:
+			return response.content
 
 
 	####################################################################################################################
@@ -453,10 +466,10 @@ class joe_api:
 
 		@type  webid:		int
 		@param webid:		Report ID to draw from.
-		@type  resource: 	str
-		@param resource: 	Resource type.
-		@type  run:	  		int
-		@param run:	  		Index into list of supplied systems to retrieve report from.
+		@type  resource:	 str
+		@param resource:	 Resource type.
+		@type  run:			  int
+		@param run:			  Index into list of supplied systems to retrieve report from.
 
 		@rtype:  default = json otherwise byte stream
 		@return: report data
@@ -578,96 +591,135 @@ def prettyprint(msg):
 	print json.dumps(msg, indent=4, sort_keys=True)
 
 if __name__ == "__main__":
+	def validate_apikey(value):
+		if len(value) != 64:
+			msg = "Not specified or invalid length."
+			raise argparse.ArgumentTypeError(msg)
+		return value
 
-	def USAGE ():
-		msg = "%s: <analyses | analyze <filepath> | available | status <id> | delete <id> | queue | report <id> | search <term> | systems>"
-		print "Joe Sandbox Web API implementation v" + version
-		print msg % sys.argv[0]
-		sys.exit(1)
-
-	if len(sys.argv) == 2:
-		cmd = sys.argv.pop().lower()
-		arg = None
-
-	elif len(sys.argv) == 3:
-		arg = sys.argv.pop().lower()
-		cmd = sys.argv.pop().lower()
-
-	else:
-		USAGE()
-
-	if JOE_APIKEY:
-		apikey = JOE_APIKEY
-	else:
-		apikey = getpass.getpass("Joe Sandbox APIKEY: ")
-
-	if JOE_TAC:
-		tac = "yes"
-	else:
-		tac = raw_input("Do you agree to the terms and conditions (yes/no)? ")
-		
-	if tac.lower() != "yes":
-		sys.exit(1)
-		
-	# instantiate Joe Sandbox API interface.
-	joe = joe_api(apikey)
-
-	if "analyses" in cmd:
+	def analyses(joe, args):
 		for a in joe.analyses():
-			i = 0
-			for d in a["detections"].split(";"):
-				if len(d) == 0: continue
+			detections = [int(d) for d in a["detections"].split(';')[:-1]]
+			systems = a['systems'].split(';')[:-1]
 
-				d = int(d)
-				if d >= 2: d = "malicious"
-				elif d >= 1: d = "suspicious"
-				elif d <= -1: d = "unknown"
-				else: d = "clean"
+			time_str = datetime.datetime.fromtimestamp(int(a["time"])).strftime('%Y-%m-%d %H:%M:%S')
+			for i, (detection, system) in enumerate(zip(detections, systems)):
+				if detection >= 2:
+					detection = "malicious"
+				elif detection >= 1:
+					detection = "suspicious"
+				elif detection <= -1:
+					detection = "unknown"
+				else:
+					detection = "clean"
 				
 				# Time, WebID, status, system name, filename, detection
-				
-				print datetime.datetime.fromtimestamp(int(a["time"])).strftime('%Y-%m-%d %H:%M:%S'), a["webid"], a["status"], a["systems"].split(";")[i], a["filename"], d
-				
-				i += 1
+				print time_str, a["webid"], a["status"], system, a["filename"], detection
 
-	elif "analyze" in cmd:		
-		if arg is None:
-			USAGE()
-		else:
-			with open(arg, "rb") as handle:
-				prettyprint(joe.analyze(handle, ""))
+	def analyze(joe, args):
+		try:
+			prettyprint(joe.analyze(args.sample, "", comments=args.comment))
+		finally:
+			args.sample.close()
 
-	elif "available" in cmd:
+	def available(joe, args):
 		print joe.is_available()
 
-	elif "delete" in cmd:
-		if arg is None:
-			USAGE()
-		else:
-			print joe.delete(arg)
-			
-	elif "status" in cmd:
-		if arg is None:
-			USAGE()
-		else:
-			prettyprint(joe.status(arg))
+	def status(joe, args):
+		prettyprint(joe.status(args.webid))
 
-	elif "queue" in cmd:
+	def delete(joe, args):
+		print joe.delete(args.webid)
+
+	def queue(joe, args):
 		print joe.queue_size()
 
-	elif "report" in cmd:
-		if arg is None:
-			USAGE()
-		else:
-			prettyprint(joe.report(arg))
+	def report(joe, args):
+		prettyprint(joe.report(args.webid))
 
-	elif "search" in cmd:
-		if arg is None:
-			USAGE()
-		else:
-			prettyprint(joe.search(arg))
+	def search(joe, args):
+		prettyprint(joe.search(args.searchterm))
 
-	elif "system" in cmd:
+	def systems(joe, args):
 		prettyprint(joe.systems())
-	else:
-		USAGE()
+
+	parser = argparse.ArgumentParser(description="Joe Sandbox Web API implementation v" + version)
+
+	# common arguments
+	common_parser = argparse.ArgumentParser(add_help=False)
+	common_parser.add_argument('--apiurl', default=API_URL,
+		help="Api Url (You can also modify the API_URL variable inside the script.)")
+	common_parser.add_argument('--apikey', type=validate_apikey, default=JOE_APIKEY,
+		help="Api Key (You can also modify the JOE_APIKEY variable inside the script.)")
+	if not JOE_TAC:
+		common_parser.add_argument('--accept-tac', action='store_true', required=True,
+		help="Accept the terms and conditions:\n\n\n"
+			 "https://jbxcloud.joesecurity.org/download/termsandconditions.pdf\n"
+			 "(You can also modify the JOE_TAC variable inside the script.)")
+
+	# add subparsers
+	subparsers = parser.add_subparsers(metavar="<command>")
+
+	# analyses
+	analyses_parser = subparsers.add_parser('analyses', parents=[common_parser],
+			help="List the submitted analyses.")
+	analyses_parser.set_defaults(func=analyses)
+
+	# analyze <filepath>
+	analyze_parser = subparsers.add_parser('analyze', parents=[common_parser],
+			help="Submit a sample to Joe Sandbox.")
+	analyze_parser.add_argument('sample', type=argparse.FileType('rb'),
+			help="Path to sample")
+	analyze_parser.add_argument('--comment',
+			help="Comment for the sample.")
+	analyze_parser.set_defaults(func=analyze)
+
+	# available
+	available_parser = subparsers.add_parser('available', parents=[common_parser],
+			help="Determine whether the Joe Sandbox servers are available or in maintenance mode.")
+	available_parser.set_defaults(func=available)
+
+	# status <webid>
+	status_parser = subparsers.add_parser('status', parents=[common_parser],
+			help="Show the status of a submission.")
+	status_parser.add_argument('webid', type=int,
+			help="Webid of the submission.")
+	status_parser.set_defaults(func=status)
+
+	# delete <id>
+	delete_parser = subparsers.add_parser('delete', parents=[common_parser],
+			help="Delete a submission.")
+	delete_parser.add_argument('webid', type=int,
+			help="Webid of the submission.")
+	delete_parser.set_defaults(func=delete)
+
+	# queue
+	queue_parser = subparsers.add_parser('queue', parents=[common_parser],
+			help="Show the queue length.")
+	queue_parser.set_defaults(func=queue)
+
+	# report <id>
+	report_parser = subparsers.add_parser('report', parents=[common_parser],
+			help="Print the irjsonfixed report.")
+	delete_parser.add_argument('webid', type=int,
+			help="Webid of the submission.")
+	report_parser.set_defaults(func=report)
+
+	# search <term>
+	search_parser = subparsers.add_parser('search', parents=[common_parser],
+			help="Search for submissions.")
+	search_parser.add_argument('searchterm',
+			help="Search term.")
+	search_parser.set_defaults(func=search)
+
+	# systems
+	systems_parser = subparsers.add_parser('systems', parents=[common_parser],
+			help="List all available systems.")
+	systems_parser.set_defaults(func=systems)
+
+	args = parser.parse_args()
+	
+	# run command
+	joe = joe_api(apikey=args.apikey, apiurl=args.apiurl)
+	args.func(joe, args)
+

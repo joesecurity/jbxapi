@@ -19,7 +19,7 @@ So far the following actions are implemented:
 * Query daily and monthly quota
 * Query account type
 
-The API is implemented as a Python class "joe_api" that you can call on the command line or import into your project. joe_api contains less than 300 LOC and is very concise and easy to understand.  
+The API is implemented as a Python class `joe_api` that you can call on the command line or import into your project. `joe_api` contains less than 300 LOC and is very concise and easy to understand.
 
 # License
 
@@ -28,11 +28,14 @@ The code is written in Python and licensed under MIT.
 # Requirements
 
 * Python 2.6 or higher
-* [python-requests](http://docs.python-requests.org/en/latest/), pip install python-requests
+* The `argparse` library. (Included in Python 2.7 or install with `pip install argparse`)
+* [python-requests](http://docs.python-requests.org/en/latest/), `pip install python-requests`
 
 # Install
 
-Add your API key and accept the Joe Sandbox Cloud terms and conditions:
+You can pass the api key and agree to the Joe Sandbox Cloud terms and conditions
+by passing `--apikey <key>` and `--accept-tac` or you can modify the script directly
+as follows:
 
 ```python
 # APIKEY, to generate goto user settings - API key
@@ -44,13 +47,30 @@ JOE_TAC  = False
 
 # Examples
 
-To list all commands call jbxapi.py without any arguments:
+To list all commands call `jbxapi.py --help`:
 
 ```bash
-jbxapi.py
+jbxapi.py --help
+usage: jbxapi.py [-h] <command> ...
+
 Joe Sandbox Web API implementation v2.0.0
-jbxapi.py: <analyses | analyze <filepath> | available | status <id> | delete <id
-> | queue | report <id> | search <term> | systems>
+
+positional arguments:
+  <command>
+    analyses  List the submitted analyses.
+    analyze   Submit a sample to Joe Sandbox.
+    available
+              Determine whether the Joe Sandbox servers are available or in
+              maintenance mode.
+    status    Show the status of a submission.
+    delete    Delete a submission.
+    queue     Show the queue length.
+    report    Print the irjsonfixed report.
+    search    Search for submissions.
+    systems   List all available systems.
+
+optional arguments:
+  -h, --help  show this help message and exit
 ```
 
 Sumbit a sample: 

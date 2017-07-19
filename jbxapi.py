@@ -49,7 +49,7 @@ class joe_api:
 	"""
 
 	####################################################################################################################
-	def __init__ (self, apikey, verify_ssl=True, apiurl=API_URL):
+	def __init__ (self, apikey, verify_ssl=True, apiurl=API_URL, accept_tac=JOE_TAC):
 		"""
 		Initialize the interface to Joe Sandbox API with apikey.
 		"""
@@ -57,6 +57,7 @@ class joe_api:
 		self.apikey	   = apikey
 		self.apiurl = apiurl
 		self.verify_ssl = verify_ssl
+		self.accept_tac = accept_tac
 
 
 	####################################################################################################################
@@ -291,9 +292,9 @@ class joe_api:
 		# Parameters.
 		params = \
 		{
-			"tandc"	: "1",
 			"inet"	 : inet,
 			"scae"	 : scae,
+			"tandc"	: "1" if self.accept_tac else "0",
 			"dec"	  : dec,
 			"ssl"	  : ssl,
 			"filter"   : filter,
@@ -651,11 +652,10 @@ if __name__ == "__main__":
 		help="Api Url (You can also modify the API_URL variable inside the script.)")
 	common_parser.add_argument('--apikey', type=validate_apikey, default=JOE_APIKEY,
 		help="Api Key (You can also modify the JOE_APIKEY variable inside the script.)")
-	if not JOE_TAC:
-		common_parser.add_argument('--accept-tac', action='store_true', required=True,
-		help="Accept the terms and conditions:\n\n\n"
-			 "https://jbxcloud.joesecurity.org/download/termsandconditions.pdf\n"
-			 "(You can also modify the JOE_TAC variable inside the script.)")
+	common_parser.add_argument('--accept-tac', action='store_true', default=JOE_TAC,
+		help="Accept the terms and conditions: "
+		"https://jbxcloud.joesecurity.org/download/termsandconditions.pdf "
+		"(You can also modify the JOE_TAC variable inside the script.)")
 
 	# add subparsers
 	subparsers = parser.add_subparsers(metavar="<command>")
@@ -720,6 +720,6 @@ if __name__ == "__main__":
 	args = parser.parse_args()
 	
 	# run command
-	joe = joe_api(apikey=args.apikey, apiurl=args.apiurl)
+	joe = joe_api(apikey=args.apikey, apiurl=args.apiurl, accept_tac=args.accept_tac)
 	args.func(joe, args)
 

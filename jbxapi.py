@@ -701,7 +701,7 @@ if __name__ == "__main__":
 	# report <id>
 	report_parser = subparsers.add_parser('report', parents=[common_parser],
 			help="Print the irjsonfixed report.")
-	delete_parser.add_argument('webid', type=int,
+	report_parser.add_argument('webid', type=int,
 			help="Webid of the submission.")
 	report_parser.set_defaults(func=report)
 

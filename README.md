@@ -27,11 +27,15 @@ The code is written in Python and licensed under MIT.
 
 # Requirements
 
-* Python 2.6 or higher
+* Python 2.6 or higher (Python 3 will be supported in the next version.)
 * The `argparse` library. (Included in Python 2.7 or install with `pip install argparse`)
 * [python-requests](http://docs.python-requests.org/en/latest/), `pip install python-requests`
 
 # Install
+
+Either copy `jbxapi.py` to where you need it or install with `pip`:
+
+    pip install git+https://github.com/joesecurity/joesandboxcloudapi@v1.0.0#egg=jbxapi
 
 You can pass the api key and agree to the Joe Sandbox Cloud terms and conditions
 by passing `--apikey <key>` and `--accept-tac` or you can modify the script directly

@@ -1,725 +1,675 @@
-#!/usr/bin/env python2
-
-# Joe Sandbox API wrapper.
+#!/usr/bin/env python
 # License: MIT
 # Copyright Joe Security 2017
-# REQUIRES: python-requests http://docs.python-requests.org/en/latest/
 
-version = "2.0.0"
+"""
+jbxapi.py serves two purposes.
 
+ (1) a light wrapper around the REST API of Joe Sandbox
+ (2) a command line script to interact with Joe Sandbox
+
+"""
+
+from __future__ import print_function
+from __future__ import unicode_literals
+from __future__ import division
+
+import os
 import sys
+import io
+import errno
+import json
+import copy
+import shutil
+import argparse
 import time
+import itertools
 import random
-import getpass
-import datetime
 
 try:
-	import argparse
+    import requests
 except ImportError:
-	print "Error: Cannot import 'argparse'. Please upgrade to Python 2.7 or install it via pip."
-	sys.exit()
-
-try:
-	import requests
-except ImportError:
-	print "Error: Please install the Python 'requests' package via pip"
-	sys.exit()
-
-try:
-	import simplejson as json
-except ImportError:
-	import json
+    print("Please install the Python 'requests' package via pip", file=sys.stderr)
+    sys.exit(1)
 
 # API URL.
-API_URL  = "https://jbxcloud.joesecurity.org/api/"
+API_URL  = "https://jbxcloud.joesecurity.org/api"
+# for on-premise installations, use the following
+# API_URL = "http://" + webserveraddress + "/joesandbox/index.php/api"
 
 # APIKEY, to generate goto user settings - API key
-JOE_APIKEY = ""
+API_KEY = ""
 
+# (for Joe Sandbox Cloud only)
+# Set to True if you agree to the Terms and Conditions.
 # https://jbxcloud.joesecurity.org/resources/termsandconditions.pdf
-# SET TO TRUE IF AGREE TO TERMS (settings in the web interface do not apply to this configuration)
-JOE_TAC  = False
-
-
-########################################################################################################################
-class joe_api:
-	"""
-	Joe Sandbox API wrapper.
-	@see: https://joesandbox.joesecurity.org/index.php/download/Joe%20Sandbox%20WEB%20API.pdf
-	"""
-
-	####################################################################################################################
-	def __init__ (self, apikey, verify_ssl=True, apiurl=API_URL, accept_tac=JOE_TAC):
-		"""
-		Initialize the interface to Joe Sandbox API with apikey.
-		"""
-
-		self.apikey	   = apikey
-		self.apiurl = apiurl
-		self.verify_ssl = verify_ssl
-		self.accept_tac = accept_tac
-
-
-	####################################################################################################################
-	def __API (self, api, params=None, files=None):
-		"""
-		Robustness wrapper. Tries up to 3 times to dance with the Joe Sandbox API.
-
-		@type  api:		str
-		@param api:		API to call.
-		@type  params:	 dict
-		@param params:	 Optional parameters for API.
-		@type  files:	  dict
-		@param files:	  Optional dictionary of files for multipart post.
-
-		@rtype:  requests.response.
-		@return: Response object.
-
-		@raise Exception: If all attempts failed.
-		"""
-
-		# default query parameters.
-		default_params = \
-		{
-			"apikey" : self.apikey
-		}
-
-		# interpolate default and supplied API params.
-		if params is None:
-			params = default_params
-		else:
-			params.update(default_params)
-
-		# make up to three attempts to dance with the API, use a jittered exponential back-off delay
-		for i in xrange(3):
-			try:
-				return requests.post(self.apiurl + api, data=params, files=files, verify=self.verify_ssl)
-
-			# 0.4, 1.6, 6.4, 25.6, ...
-			except:
-				print sys.exc_info()
-				time.sleep(random.uniform(0, 4 ** i * 100 / 1000.0))
-
-		raise Exception("exceeded 3 attempts with Joe sandbox API.")
-
-
-	####################################################################################################################
-	def analyses (self):
-		"""
-		Retrieve a list of analyzed samples.
-
-		@rtype:  list
-		@return: List of objects referencing each analyzed file.
-		
-		Example:
-		
-		{  
-		   "analyses":[  
-			  {  
-				 "webid":"257605",
-				 "md5":"a362758c36bed10fb64823918ed90740",
-				 "sha1":"b4bb387abd203338cf01c7bd0fe713fbeef5e381",
-				 "sha256":"a1118b689effce96240a82d701c2aa8c2e718512c29edff30412cfa5e8b69c83",
-				 "filename":"Delivery-Details.js",
-				 "scriptname":"default.jbs",
-				 "time":"1491813597",
-				 "status":"finished",
-				 "reportid":"250843",
-				 "comments":" Sample was extracted from sample-248600-a362758c36bed10fb64823918ed90740.zip \/ archive\n",
-				 "systems":"w7_1;",
-				 "detections":"2;",
-				 "tags":"",
-				 "errors":";",
-				 "runnames":";",
-				 "yara":"false;",
-				 "numberofruns":2,
-				 "mostInterestingRun":0
-			  },
-			  {  
-				 "webid":"257318",
-				 "md5":"66f4f1384105ce7ee1636d34f2afb1c9",
-				 "sha1":"3f23d152cc7badf728dfd60f6baa5c861a500630",
-				 "sha256":"42fbb2437faf68bae5c5877bed4d257e14788ff81f670926e1d4bbe731e7981b",
-				 "filename":"mydoc-66f4f1384105ce7ee1636d34f2afb1c9.doc",
-				 "scriptname":"defaultwindowsofficecookbook.jbs",
-				 "time":"1491738899",
-				 "status":"finished",
-				 "reportid":"250556",
-				 "comments":"",
-				 "systems":"w7_1;",
-				 "detections":"2;",
-				 "tags":"",
-				 "errors":";",
-				 "runnames":";",
-				 "yara":"false;",
-				 "numberofruns":2,
-				 "mostInterestingRun":0
-			  }
-		   ]
-		}
-		
-		detections: 2 = malicious, 1 = suspicious, 0 = clean
-		
-		"""
-
-		# dance with the API.
-		response = self.__API("analysis/list")
-
-		return json.loads(response.content)
-
-
-	####################################################################################################################
-	def analyze (self, handle, url, systems="", inet=True, scae=False, dec=False, ssl=False, filter=False, hyper=False, cache_sha256=False, ais=False, vbainstr=False, officepw="", resubmit_dropped=False, comments="", sendoncomplete=False, exporttojbxview=False):
-		pass
-   
-		"""
-		Submit a file for analysis.
-
-		@type  handle:			   File handle
-		@param handle:			  Handle to file to upload for analysis.
-		@type  url:				  str
-		@param url:				 URL to analyze.
-		@type  systems:			  str
-		@param systems:			 Comma separated list of systems to run sample on.
-		@type  inet:				 bool
-		@param inet:				 Raise this flag to allow Internet connectivity for sample.
-		@type  scae:				 bool
-		@param scae:				 Raise this flag to enable Static Code Analysis Engine.
-		@type  dec:				  bool
-		@param dec:				  Raise this flag to enable Hybrid Decompilation @see https://www.joesecurity.org/joe-sandbox-dec.
-		@type  ssl:				  bool
-		@param ssl:				  Raise this flag to enable HTTPS inspection.
-		@type  filter:			   bool
-		@param filter:			   Raise this flag to enable Joe Sandbox Filter @see https://www.joesecurity.org/joe-sandbox-filter.
-		@type  hyper:				bool
-		@param hyper:				Raise this flag to enable Hyper Mode. Hyper Mode focus on speed versus deep analysis.
-		@type exporttojbxview:	   bool
-		@param exporttojbxview	   Raise the flag to enable export of analysis report(s) to Joe Sandbox View.
-		@type  cache_sha256:		 bool
-		@param cache_sha256:		 Raise this flag to check if an analysis with the same sample exists; if so do not re-analyze.
-		@type  ais:				  bool
-		@param ais:				  Raise this flag to enable Adaptive Internet Simulation @see https://www.joesecurity.org/joe-sandbox-ais. Only available in Joe Sandbox Cloud and Ultimate.
-		@type  vbainstr:			 bool
-		@param vbainstr:			 Raise this flag to enable VBA instrumentation.
-		@type  officepw:			 string
-		@param officepw:			 Sets a password for encrypted Microsoft Office documents.
-		@type  resubmit_dropped:	 bool
-		@param resubmit_dropped:	 Auto submit dropped non executed PE files.
-		@type  comments:			 str
-		@param comments:			 Comments to store with sample entry.
-		@type  sendoncomplete:		 int
-		@param sendoncomplete:		 Send an email on analysis complete.
-
-		@rtype:  dict
-		@return: Dictionary of system identifier and associated webids.
-		
-		Example:
-		
-		{
-			"webid": 257770,
-			"webids": [
-				257770
-			]
-		}
-		
-		"""
-
-		if inet:
-			inet = "1"
-		else:
-			inet = "0"
-
-		if scae:
-			scae = "1"
-		else:
-			scae = "0"
-			
-		if dec:
-			dec = "1"
-		else:
-			dec = "0"
-			
-		if ssl:
-			ssl = "1"
-		else:
-			ssl = "0"
-			
-		if filter:
-			filter = "1"
-		else:
-			filter = "0"
-			
-		if hyper:
-			hyper = "1"
-		else:
-			hyper = "0"
-			
-		if exporttojbxview:
-			export_to_jbxview = "1"
-		else:
-			export_to_jbxview = "0"
-		
-		if cache_sha256:
-			cache_sha256 = "1"
-		else:
-			cache_sha256 = "0"
-			
-		if ais:
-			ais = "1"
-		else:
-			ais = "0"
-			
-		if vbainstr:
-			vbainstr = "1"
-		else:
-			vbainstr = "0"
-			
-		if resubmit_dropped:
-			resubmit_dropped = "1"
-		else:
-			resubmit_dropped = "0"	
-			
-		if sendoncomplete:
-			send_on_complete = "1"
-		else:
-			send_on_complete = "0"			
-
-		if len(url) != 0:
-			type = "url"
-		else:
-			type = "file"
-
-		# Parameters.
-		params = \
-		{
-			"inet"	 : inet,
-			"scae"	 : scae,
-			"tandc"	: "1" if self.accept_tac else "0",
-			"dec"	  : dec,
-			"ssl"	  : ssl,
-			"filter"   : filter,
-			"hyper"	: hyper,
-			"export_to_jbxview": export_to_jbxview,
-			"cache_sha256"	: cache_sha256,
-			"ais"	  : ais,
-			"vbainstr" : vbainstr,
-			"officepw" : officepw,
-			"resubmit_dropped" : resubmit_dropped,
-			"send_on_complete" : send_on_complete,
-			"type"		 : type,
-			"comments" : comments
-		}
-
-		if type == "file":
-			files  = { "sample" : handle }
-		else:
-			files  = {}
-			params["url"] = url
-
-		# keep a list of webids per system we send the sample to.
-		webids = {}
-
-		if len(systems) == 0:
-			params["auto"] = "1"
-		else:
-		
-			for system in systems.split(","):
-					
-				params[system] = "1"
-
-		# ensure the handle is at offset 0.
-		handle.seek(0)
-
-		# set the system and dance with the API.
-	
-		response	   = self.__API("analysis", params, files)
-
-		#print response
-
-		try:
-			return json.loads(response.content)
-		except ValueError:
-			return response.content
-
-
-	####################################################################################################################
-	def is_available (self):
-		"""
-		Determine if the Joe Sandbox API servers are alive or in maintenance mode.
-
-		@rtype:  bool
-		@return: True if service is available, False otherwise.
-		"""
-
-		# dance with the API.
-		response = self.__API("server/available")
-
-		try:
-			if response.content == "1":
-				return True
-		except:
-			pass
-
-		return False
-		
-	####################################################################################################################
-	def status (self, webid):
-		"""
-		Checks the status of an analysis.
-
-		@rtype:  dict
-		@return: Dictionary of analysis and status. Check for status:finished for finished analysis.
-		
-		Example:
-		
-		{  
-		   "webid":"257605",
-		   "md5":"a362758c36bed10fb64823918ed90740",
-		   "sha1":"b4bb387abd203338cf01c7bd0fe713fbeef5e381",
-		   "sha256":"a1118b689effce96240a82d701c2aa8c2e718512c29edff30412cfa5e8b69c83",
-		   "filename":"Delivery-Details.js",
-		   "scriptname":"default.jbs",
-		   "time":"1491813597",
-		   "status":"finished",
-		   "reportid":"250843",
-		   "comments":" Sample was extracted from sample-248600-a362758c36bed10fb64823918ed90740.zip \/ ar chive\n",
-		   "systems":"w7_1;",
-		   "detections":"2;",
-		   "errors":";",
-		   "runnames":";",
-		   "yara":"false;"
-		}
-		
-		detections: 2 = malicious, 1 = suspicious, 0 = clean
-		
-		"""
-
-		# dance with the API.
-		response = self.__API("analysis/check", {"webid" : webid})
-
-		try:
-			return json.loads(response.content)
-		except:
-			None
-
-		return response.content
-		
-	####################################################################################################################
-	def comment (self, webid):
-		"""
-		Get the comment of an analysis
-
-		@rtype:  str
-		@return: Comment
-		
-		"""
-
-		# dance with the API.
-		response = self.__API("analysis/comment", {"webid" : webid})
-
-		return response.content
-
-
-	####################################################################################################################
-	def delete (self, webid):
-		"""
-		Delete the reports associated with the given webid.
-
-		@type  webid: int
-		@param webid: Report ID to delete.
-
-		@rtype:  bool
-		@return: True on success, False otherwise.
-		"""
-
-		# dance with the API.
-		response = self.__API("analysis/delete", {"webid" : webid})
-
-		try:
-			if response.content == "1":
-				return True
-		except:
-			pass
-
-		return False
-
-
-	####################################################################################################################
-	def queue_size (self):
-		"""
-		Determine Joe sandbox queue length.
-
-		@rtype:  int
-		@return: Number of submissions in sandbox queue.
-		"""
-
-		# dance with the API.
-		response = self.__API("queue/size")
-
-		return int(response.content)
-
-
-	####################################################################################################################
-	def report (self, webid, resource="irjsonfixed", run=0):
-		"""
-		Retrieves the specified report for the analyzed item, referenced by webid. Available resource types include:
-		html, xml, json, jsonfixed, lighthtml, lightxml, lightjson, lightjsonfixed, executive, classhtml, classxml, clusterxml, irxml, irjson, irjsonfixed, openioc, maec, misp, graphreports, pdf, openioc, bins (dropped files), unpackpe (unpacked pe files), unpack, ida, pcap, pcapslim, shoots, memstrings, binstrings, memdumps, sample, cookbook and yara.
-
-		@type  webid:		int
-		@param webid:		Report ID to draw from.
-		@type  resource:	 str
-		@param resource:	 Resource type.
-		@type  run:			  int
-		@param run:			  Index into list of supplied systems to retrieve report from.
-
-		@rtype:  default = json otherwise byte stream
-		@return: report data
-		"""
-
-		resource = resource.lower()
-		params   = \
-		{
-			"webid" : webid,
-			"type"  : resource,
-			"run"   : run,
-		}
-
-		# dance with the API.
-		response = self.__API("analysis/download", params)
-
-		# if resource is JSON, convert to container and return the head reference "analysis".
-		if resource.find("json") != -1:
-			try:
-				return json.loads(response.content)
-			except:
-				None
-
-		# otherwise, return the raw content.
-		return response.content
-
-
-	####################################################################################################################
-	def search (self, query):
-		"""
-		Searches for analysis.
-
-		@type  query: str, can be an MD5, SHA1, SHA256, filename, cookbook name, comment, URL or report id.
-		@param query: Search query.
-
-		@rtype:  list
-		@return: List of objects describing available analysis systems. For example see status API.
-		
-		"""
-
-		# dance with the API.
-		response = self.__API("analysis/search", {"q" : query })
-
-		# returns a list, we assign it into a dictionary.
-		content = '{"results":' + response.content + '}'
-
-		# parse the JSON into a container and return the result list we just created above.
-		return json.loads(content)["results"]
-
-
-	####################################################################################################################
-	def systems (self):
-		"""
-		Retrieve a list of available systems.
-
-		@rtype:  list
-		@return: List of objects describing available analysis systems.
-		
-		Example: w7,w7x64,W10,W10_Office2016
-		
-		"""
-
-		# dance with the API.
-		response = self.__API("server/systems")
-
-		# returns a list, we assign it into a dictionary.
-		content = '{"systems":' + response.content + '}'
-
-		# parse the JSON into a container and return the systems list we just created above.
-		return json.loads(content)["systems"]
-		
-	####################################################################################################################
-	def submissionsmonth (self):
-		"""
-		Determine the remaining submissions available for the current month.
-
-		@rtype:  int
-		@return: Number of remaining submissions.
-		"""
-
-		# dance with the API.
-		response = self.__API("remaininganalysesmonth")
-
-		return int(response.content)
-		
-	####################################################################################################################
-	def submissionsday (self):
-		"""
-		Determine the remaining submissions available for the current day.
-
-		@rtype:  int
-		@return: Number of remaining submissions.
-		"""
-
-		# dance with the API.
-		response = self.__API("remaininganalysesday")
-
-		return int(response.content)
-		
-	####################################################################################################################
-	def account (self):
-		"""
-		Determine the account type
-
-		@rtype:  str
-		@return: Account type.
-		"""
-
-		# dance with the API.
-		response = self.__API("account")
-
-		return response.content
-		
-
-
-########################################################################################################################
-
-def prettyprint(msg):
-	print json.dumps(msg, indent=4, sort_keys=True)
+ACCEPT_TAC  = False
+
+# default submission parameters
+# when specifying None, the server decides
+submission_defaults = {
+    # system selection, set to None for automatic selection
+    # 'systems': ('w7', 'w7x64'),
+    'systems': None,
+    # comment for an analysis
+    'comments': None,
+    # maximum analysis time
+    'analysis-time': None,
+    # password for decrypting office files
+    'office-files-password': None,
+    # country for routing internet through
+    'localized-internet-country': None,
+    # tags
+    'tags': None,
+    # enable internet access during analysis
+    'internet-access': None,
+    # lookup samples in the report cache
+    'report-cache': None,
+    # hybrid code analysis
+    'hybrid-code-analysis': None,
+    # hybrid decompilation
+    'hybrid-decompilation': None,
+    # adaptive internet simulation
+    'adaptive-internet-simulation': None,
+    # inspect ssl traffic
+    'ssl-inspection': None,
+    # instrumentation of vba scripts
+    'vba-instrumentation': None,
+    # automatically re-submit dropped PE files if they were not executed by the sample
+    'autosubmit-dropped': None,
+    # send an e-mail upon completion of the analysis
+    'email-notification': None,
+
+    ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
+
+    # filter benign samples
+    'smart-filter': None,
+    # select hyper mode for a faster but less thorough analysis
+    'hyper-mode': None,
+    # export the report to Joe Sandbox View
+    'export-to-jbxview': None,
+}
+
+class JoeSandbox(object):
+    def __init__(self, apikey=API_KEY, apiurl=API_URL, accept_tac=ACCEPT_TAC, timeout=None, verify_ssl=True, retries=3):
+        """
+        Create a JoeSandbox object.
+
+        Parameters:
+          apikey:     the api key
+          apiurl:     the api url
+          accept_tac: Joe Sandbox Cloud requires accepting the Terms and Conditions.
+                      https://jbxcloud.joesecurity.org/resources/termsandconditions.pdf
+          timeout:    Timeout in seconds for accessing the API. Raises a ConnectionError on timeout.
+          verify_ssl: Enable or disable checking SSL certificates.
+          retries:    Number of times requests should be retried if they timeout.
+        """
+        self.apikey = apikey
+        self.apiurl = apiurl.rstrip("/")
+        self.accept_tac = accept_tac
+        self.timeout = timeout
+        self.retries = retries
+
+        self.session = requests.Session()
+        self.session.verify = verify_ssl
+
+    def list(self):
+        """
+        Fetch a list of all analyses.
+        """
+        response = self._post(self.apiurl + '/v2/analysis/list', data={'apikey': self.apikey})
+
+        return self._raise_or_extract(response)
+
+    def submit_sample(self, sample, cookbook=None, params={}, _extra_params={}):
+        """
+        Submit a sample and returns the associated webids for the samples.
+
+        Parameters:
+          sample:       The sample to submit. Needs to be a file-like object.
+          cookbook:     Uploads a cookbook together with the sample.
+          params:       Customize the sandbox parameters. They are described in more detail
+                        in the default submission parameters.
+
+        Example:
+
+            joe = JoeSandbox()
+            with open("sample.exe", "rb") as f:
+                joe.submit_sample(f, params={"systems": ["w7"]})
+        
+        Example:
+
+            import io.BytesIO
+            joe = JoeSandbox()
+
+            cookbook = io.BytesIO(b"cookbook content")
+            with open("sample.exe", "rb") as f:
+                joe.submit_sample(f, cookbook=cookbook)
+        """
+        self._check_user_parameters(params)
+
+        files = {'sample': sample}
+        if cookbook:
+            files['cookbook'] = cookbook
+
+        return self._submit(params, files, _extra_params=_extra_params)
+
+    def submit_sample_url(self, url, params={}):
+        """
+        Submit a sample at a given URL for analysis.
+        """
+        self._check_user_parameters(params)
+        params = copy.copy(params)
+        params['sample-url'] = sample
+        return self._submit(params)
+
+    def submit_url(self, url, params={}):
+        """
+        Submit a website for analysis.
+        """
+        self._check_user_parameters(params)
+        params = copy.copy(params)
+        params['url'] = url
+        return self._submit(params)
+
+    def submit_cookbook(self, cookbook, params={}):
+        """
+        Submit a cookbook.
+        """
+        self._check_user_parameters(params)
+        files = {'cookbook': cookbook}
+        return self._submit(params, files)
+
+    def _submit(self, params, files=None, _extra_params={}):
+        data = copy.copy(submission_defaults)
+        data.update(params)
+
+        data['apikey'] = self.apikey
+        data['accept-tac'] = "1" if self.accept_tac else "0"
+        # rename array parameters
+        data['systems[]'] = data.pop('systems', None)
+        data['tags[]'] = data.pop('tags', None)
+
+        # submit booleans as "0" and "1"
+        bool_parameters = {
+            "internet-access", "report-cache", "hybrid-code-analysis", "hybrid-decompilation",
+            "adaptive-internet-simulation", "ssl-inspection", "hybrid-decompilation",
+            "vba-instrumentation", "autosubmit-dropped", "email-notification", "smart-filter",
+            "hyper-mode", "export-to-jbxview",
+        }
+        for key, value in data.items():
+            if value is not None and key in bool_parameters:
+                data[key] = "1" if value else "0"
+
+        data.update(_extra_params)
+
+        response = self._post(self.apiurl + '/v2/analysis/submit', data=data, files=files)
+
+        return self._raise_or_extract(response)
+
+    def server_online(self):
+        """
+        Returns True if the Joe Sandbox servers are running or False if they are in maintenance mode.
+        """
+        response = self._post(self.apiurl + '/v2/server/online', data={'apikey': self.apikey})
+
+        return self._raise_or_extract(response)
+        
+    def info(self, webid):
+        """
+        Show the status and most important attributes of an analysis.
+        """
+        response = self._post(self.apiurl + "/v2/analysis/info", data={'apikey': self.apikey, 'webid': webid})
+
+        return self._raise_or_extract(response)
+        
+    def delete(self, webid):
+        """
+        Delete an analysis.
+        """
+        response = self._post(self.apiurl + "/v2/analysis/delete", data={'apikey': self.apikey, 'webid': webid})
+
+        return self._raise_or_extract(response)
+
+    def download(self, webid, type, run=None, file=None):
+        """
+        Download a resource for an analysis. E.g. the full report, binaries, screenshots.
+        The full list of resources can be found in our API documentation.
+
+        When `file` is given, the return value is the filename specified by the server,
+        otherwise its a tuple of (filename, bytes) with the filename and the content.
+        
+        Parameters:
+            webid: the webid of the analysis
+            type: the report type, e.g. 'html', 'bins'
+            run: specify the run. If it is None, let Joe Sandbox pick one
+            file: a writeable file-like object (When obmitted, the method returns
+                  the data as a bytes object.)
+
+        Example:
+
+            json_report = joe.download(123456, 'jsonfixed')
+            
+        Example:
+            
+            with open("full_report.html", "wb") as f:
+                joe.download(123456, "html", file=f)
+        """
+
+        # when no file is specified, we create our own
+        if file is None:
+            _file = io.BytesIO()
+        else:
+            _file = file
+
+        data = {
+            'apikey': self.apikey,
+            'webid': webid,
+            'type': type,
+            'run': run,
+        }
+
+        response = self._post(self.apiurl + "/v2/analysis/download", data=data, stream=True)
+
+        try:
+            filename = response.headers["Content-Disposition"].split("filename=")[1][1:-2]
+        except Exception as e:
+            filename = type
+
+        # do standard error handling when encountering an error (i.e. throw an exception)
+        if not response.ok:
+            self._raise_or_extract(response)
+            raise RuntimeError("Unreachable because statement above should raise.")
+
+        try:
+            for chunk in response.iter_content(1024):
+                _file.write(chunk)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(e)
+
+        # no user file means we return the content
+        if file is None:
+            return (filename, _file.getvalue())
+        else:
+            return filename
+
+    def search(self, query):
+        """
+        Lists the webids of the analyses that match the given query.
+
+        Searches in MD5, SHA1, SHA256, filename, cookbook name, comment, url and report id.
+        """
+        response = self._post(self.apiurl + "/v2/analysis/search", data={'apikey': self.apikey, 'q': query})
+
+        return self._raise_or_extract(response)
+
+    def systems(self):
+        """
+        Retrieve a list of available systems.
+        """
+        response = self._post(self.apiurl + "/v2/server/systems", data={'apikey': self.apikey})
+
+        return self._raise_or_extract(response)
+        
+    def account_info(self):
+        """
+        Only available on Joe Sandbox Cloud
+
+        Show information about the account.
+        """
+        response = self._post(self.apiurl + "/v2/account/info", data={'apikey': self.apikey})
+
+        return self._raise_or_extract(response)
+
+    def server_info(self):
+        """
+        Query information about the server.
+        """
+        response = self._post(self.apiurl + "/v2/server/info", data={'apikey': self.apikey})
+
+        return self._raise_or_extract(response)
+
+    def server_lia_countries(self):
+        """
+        Show the available localized internet anonymization countries.
+        """
+        response = self._post(self.apiurl + "/v2/server/lia_countries", data={'apikey': self.apikey})
+
+        return self._raise_or_extract(response)
+
+    def _post(self, *args, **kwargs):
+        """ Wrapper around requests.post which
+            (a) always inserts a timeout
+            (b) converts errors to ConnectionError
+            (c) re-tries a few times
+        """
+        for i in itertools.count(1):
+            try:
+                return self.session.post(*args, timeout=self.timeout, **kwargs)
+            except requests.exceptions.Timeout as e:
+                # exhausted all retries
+                if i >= self.retries:
+                    raise ConnectionError(e)
+            except requests.exceptions.RequestException as e:
+                raise ConnectionError(e)
+
+            # exponential backoff
+            max_backoff = 4 ** i / 10   # .4, 1.6, 6.4, 25.6, ...
+            time.sleep(random.uniform(0, max_backoff))
+
+    def _check_user_parameters(self, user_parameters):
+        """
+        Verifies that the parameter dict given by the user only contains
+        known keys. This ensures that the user detects typos faster.
+        """
+        if not user_parameters:
+            return
+
+        # sanity check against typos
+        for key in user_parameters:
+            if key not in submission_defaults:
+                raise ValueError("Unknown parameter {0}".format(key))
+
+    def _raise_or_extract(self, response):
+        """
+        Raises an exception if the response indicates an API error.
+
+        Otherwise returns the object at the 'data' key of the API response.
+        """
+
+        try:
+            data = response.json()
+        except ValueError:
+            raise JoeException("Invalid response. Is the API url correct?")
+
+        try:
+            if response.ok:
+                return data['data']
+            else:
+                error = data['errors'][0]
+                raise ApiError(error)
+        except (KeyError, TypeError):
+            raise JoeException("Invalid response. Is the API url correct?")
+
+class JoeException(Exception):
+    pass
+
+class ConnectionError(JoeException):
+    pass
+
+class ApiError(JoeException):
+    def __new__(cls, raw):
+        # select a more specific subclass if available
+        if cls is ApiError:
+            subclasses = {
+                2: MissingParameterError,
+                3: InvalidParameterError,
+                4: InvalidApiKeyError,
+                5: ServerOfflineError,
+                6: InternalServerError,
+            }
+
+            try:
+                cls = subclasses[raw["code"]]
+            except KeyError:
+                pass
+
+        return super(ApiError, cls).__new__(cls, raw["message"])
+    
+    def __init__(self, raw):
+        super(ApiError, self).__init__(raw["message"])
+        self.raw = copy.deepcopy(raw)
+        self.code = raw["code"]
+        self.message = raw["message"]
+
+class MissingParameterError(ApiError): pass
+class InvalidParameterError(ApiError): pass
+class InvalidApiKeyError(ApiError): pass
+class ServerOfflineError(ApiError): pass
+class InternalServerError(ApiError): pass
 
 if __name__ == "__main__":
-	def validate_apikey(value):
-		if len(value) != 64:
-			msg = "Not specified or invalid length."
-			raise argparse.ArgumentTypeError(msg)
-		return value
+    def print_json(value, file=sys.stdout):
+        print(json.dumps(value, indent=4, sort_keys=True), file=file)
 
-	def analyses(joe, args):
-		for a in joe.analyses():
-			detections = [int(d) for d in a["detections"].split(';')[:-1]]
-			systems = a['systems'].split(';')[:-1]
+    def list(joe, args):
+        print_json(joe.list())
 
-			time_str = datetime.datetime.fromtimestamp(int(a["time"])).strftime('%Y-%m-%d %H:%M:%S')
-			for i, (detection, system) in enumerate(zip(detections, systems)):
-				if detection >= 2:
-					detection = "malicious"
-				elif detection >= 1:
-					detection = "suspicious"
-				elif detection <= -1:
-					detection = "unknown"
-				else:
-					detection = "clean"
-				
-				# Time, WebID, status, system name, filename, detection
-				print time_str, a["webid"], a["status"], system, a["filename"], detection
+    def submit(joe, args):
+        params = {name[6:]: value for name, value in vars(args).items()
+                                  if name.startswith("param-")}
 
-	def analyze(joe, args):
-		try:
-			prettyprint(joe.analyze(args.sample, "", comments=args.comment))
-		finally:
-			args.sample.close()
+        extra_params = {}
+        for name, value in args.extra_params:
+            values = extra_params.setdefault(name, [])
+            values.append(value)
 
-	def available(joe, args):
-		print joe.is_available()
+        with open(args.sample, "rb") as f:
+            print_json(joe.submit_sample(f, params=params, _extra_params=extra_params))
 
-	def status(joe, args):
-		prettyprint(joe.status(args.webid))
+    def server_online(joe, args):
+        print_json(joe.server_online())
 
-	def delete(joe, args):
-		print joe.delete(args.webid)
+    def info(joe, args):
+        print_json(joe.info(args.webid))
 
-	def queue(joe, args):
-		print joe.queue_size()
+    def delete(joe, args):
+        print_json(joe.delete(args.webid))
 
-	def report(joe, args):
-		prettyprint(joe.report(args.webid))
+    def server_info(joe, args):
+        print_json(joe.server_info())
 
-	def search(joe, args):
-		prettyprint(joe.search(args.searchterm))
+    def server_lia_countries(joe, args):
+        print_json(joe.server_lia_countries())
 
-	def systems(joe, args):
-		prettyprint(joe.systems())
+    def report(joe, args):
+        (_, report) = joe.download(args.webid, type="irjsonfixed", run=args.run)
+        try:
+            print_json(json.loads(report))
+        except json.JSONDecodeError as e:
+            raise JoeException("Invalid response. Is the API url correct?")
 
-	parser = argparse.ArgumentParser(description="Joe Sandbox Web API implementation v" + version)
+    def download(joe, args):
+        directory_created = False
+        paths = {}
+        if args.dir is None:
+            args.dir = args.webid
+            # try to create directory, raises an error if it already exists
+            os.mkdir(args.dir)
+            directory_created = True
 
-	# common arguments
-	common_parser = argparse.ArgumentParser(add_help=False)
-	common_parser.add_argument('--apiurl', default=API_URL,
-		help="Api Url (You can also modify the API_URL variable inside the script.)")
-	common_parser.add_argument('--apikey', type=validate_apikey, default=JOE_APIKEY,
-		help="Api Key (You can also modify the JOE_APIKEY variable inside the script.)")
-	common_parser.add_argument('--accept-tac', action='store_true', default=JOE_TAC,
-		help="Accept the terms and conditions: "
-		"https://jbxcloud.joesecurity.org/download/termsandconditions.pdf "
-		"(You can also modify the JOE_TAC variable inside the script.)")
+        try:
+            for type in args.types:
+                (filename, data) = joe.download(args.webid, type=type, run=args.run)
+                path = os.path.join(args.dir, filename)
+                paths[type] = os.path.abspath(path)
+                try:
+                    with open(path, "wb") as f:
+                        f.write(data)
+                except Exception as e:
+                    # delete incomplete data in case of an exception
+                    os.remove(path)
+                    raise
+        except Exception as e:
+            if directory_created:
+                shutil.rmtree(args.dir)
+            raise
 
-	# add subparsers
-	subparsers = parser.add_subparsers(metavar="<command>")
+        print_json(paths)
 
-	# analyses
-	analyses_parser = subparsers.add_parser('analyses', parents=[common_parser],
-			help="List the submitted analyses.")
-	analyses_parser.set_defaults(func=analyses)
+    def search(joe, args):
+        print_json(joe.search(args.searchterm))
 
-	# analyze <filepath>
-	analyze_parser = subparsers.add_parser('analyze', parents=[common_parser],
-			help="Submit a sample to Joe Sandbox.")
-	analyze_parser.add_argument('sample', type=argparse.FileType('rb'),
-			help="Path to sample")
-	analyze_parser.add_argument('--comment',
-			help="Comment for the sample.")
-	analyze_parser.set_defaults(func=analyze)
+    def systems(joe, args):
+        print_json(joe.systems())
 
-	# available
-	available_parser = subparsers.add_parser('available', parents=[common_parser],
-			help="Determine whether the Joe Sandbox servers are available or in maintenance mode.")
-	available_parser.set_defaults(func=available)
+    # common arguments
+    common_parser = argparse.ArgumentParser(add_help=False)
+    common_parser.add_argument('--apiurl', default=API_URL,
+        help="Api Url (You can also modify the API_URL variable inside the script.)")
+    common_parser.add_argument('--apikey', default=API_KEY,
+        help="Api Key (You can also modify the API_KEY variable inside the script.)")
+    common_parser.add_argument('--accept-tac', action='store_true', default=ACCEPT_TAC,
+        help="(Joe Sandbox Cloud only): Accept the terms and conditions: "
+        "https://jbxcloud.joesecurity.org/download/termsandconditions.pdf "
+        "(You can also modify the ACCEPT_TAC variable inside the script.)")
 
-	# status <webid>
-	status_parser = subparsers.add_parser('status', parents=[common_parser],
-			help="Show the status of a submission.")
-	status_parser.add_argument('webid', type=int,
-			help="Webid of the submission.")
-	status_parser.set_defaults(func=status)
+    parser = argparse.ArgumentParser(description="Joe Sandbox Web API")
 
-	# delete <id>
-	delete_parser = subparsers.add_parser('delete', parents=[common_parser],
-			help="Delete a submission.")
-	delete_parser.add_argument('webid', type=int,
-			help="Webid of the submission.")
-	delete_parser.set_defaults(func=delete)
+    # add subparsers
+    subparsers = parser.add_subparsers(metavar="<command>", title="commands")
+    subparsers.required = True
 
-	# queue
-	queue_parser = subparsers.add_parser('queue', parents=[common_parser],
-			help="Show the queue length.")
-	queue_parser.set_defaults(func=queue)
+    # list
+    list_parser = subparsers.add_parser('list', parents=[common_parser],
+            help="Show all submitted analyses.")
+    list_parser.set_defaults(func=list)
 
-	# report <id>
-	report_parser = subparsers.add_parser('report', parents=[common_parser],
-			help="Print the irjsonfixed report.")
-	report_parser.add_argument('webid', type=int,
-			help="Webid of the submission.")
-	report_parser.set_defaults(func=report)
+    # submit <filepath>
+    submit_parser = subparsers.add_parser('submit', parents=[common_parser],
+            help="Submit a sample to Joe Sandbox.")
+    submit_parser.add_argument('sample',
+            help="Path to sample")
+    submit_parser.add_argument('--param', dest="extra_params", default=[], action="append", nargs=2, metavar=("NAME", "VALUE"),
+            help="Specify additional parameters.")
+    submit_parser.set_defaults(func=submit)
 
-	# search <term>
-	search_parser = subparsers.add_parser('search', parents=[common_parser],
-			help="Search for submissions.")
-	search_parser.add_argument('searchterm',
-			help="Search term.")
-	search_parser.set_defaults(func=search)
+    params = submit_parser.add_argument_group('analysis parameters')
 
-	# systems
-	systems_parser = subparsers.add_parser('systems', parents=[common_parser],
-			help="List all available systems.")
-	systems_parser.set_defaults(func=systems)
+    def add_bool_param(name, dest=None, help=""):
+        params.add_argument(name, dest=dest, action="store_true", default=None, help=help)
+        negative_name = "--no-" + name[2:]
+        params.add_argument(negative_name, dest=dest, default=None, action="store_false")
 
-	args = parser.parse_args()
-	
-	# run command
-	joe = joe_api(apikey=args.apikey, apiurl=args.apiurl, accept_tac=args.accept_tac)
-	args.func(joe, args)
+    params.add_argument("--comments", dest="param-comments", metavar="TEXT",
+            help="Comment for the analysis.")
+    params.add_argument("--system", dest="param-systems", action="append", metavar="SYSTEM",
+            help="Select systems. Can be specified multiple times.")
+    params.add_argument("--analysis-time", dest="param-analysis-time", metavar="SEC",
+            help="Analysis time in seconds.")
+    add_bool_param("--internet", dest="param-internet-access",
+            help="Enable Internet Access.")
+    add_bool_param("--cache", dest="param-report-cache",
+            help="Check cache for a report before analyzing the sample.")
+    params.add_argument("--office-pw", dest="param-office-files-password", metavar="PASSWORD",
+            help="Password for decrypting office files.")
+    add_bool_param("--hca", dest="param-hybrid-code-analysis",
+            help="Enable hybrid code analysis.")
+    add_bool_param("--dec", dest="param-hybrid-decompilation",
+            help="Enable hybrid decompilation.")
+    add_bool_param("--ais", dest="param-adaptive-internet-simulation",
+            help="Enable adaptive internet simulation.")
+    add_bool_param("--ssl-inspection", dest="param-ssl-inspection",
+            help="Inspect SSL traffic")
+    add_bool_param("--vbainstr", dest="param-vba-instrumentation",
+            help="Enable VBA script instrumentation.")
+    params.add_argument("--localized-internet-country", "--lia", dest="param-localized-internet-country", metavar="NAME",
+            help="Country for routing internet traffic through.")
+    params.add_argument("--tag", dest="param-tags", action="append", metavar="TAG",
+            help="Add tags to the analysis.")
+
+    # info <webid>
+    info_parser = subparsers.add_parser('info', parents=[common_parser],
+            help="Show info about an analysis.")
+    info_parser.add_argument('webid',
+            help="Webid of the analysis.")
+    info_parser.set_defaults(func=info)
+
+    # delete <id>
+    delete_parser = subparsers.add_parser('delete', parents=[common_parser],
+            help="Delete an analysis.")
+    delete_parser.add_argument('webid',
+            help="Webid of the analysis.")
+    delete_parser.set_defaults(func=delete)
+
+    # report <id>
+    report_parser = subparsers.add_parser('report', parents=[common_parser],
+            help="Print the irjsonfixed report.")
+    report_parser.add_argument('webid',
+            help="Webid of the analysis.")
+    report_parser.add_argument('--run', type=int,
+            help="Select the run.")
+    report_parser.set_defaults(func=report)
+
+    # download <id> [resource, resource, ...]
+    download_parser = subparsers.add_parser('download', parents=[common_parser],
+            help="Download a resource of an analysis.")
+    download_parser.add_argument('webid',
+            help="Webid of the analysis.")
+    download_parser.add_argument('--dir',
+            help="Directory to store the reports in. "
+                 "Defaults to <webid> in the current working directory. (Will be created.)")
+    download_parser.add_argument('--run', type=int,
+            help="Select the run. Obmitting this option lets Joe Sandbox choose a run.")
+    download_parser.add_argument('types', nargs='*', default=['html'],
+            help="Resource types to download. "
+                 "Defaults to 'html'")
+    download_parser.set_defaults(func=download)
+
+    # search <term>
+    search_parser = subparsers.add_parser('search', parents=[common_parser],
+            help="Search for analysis.")
+    search_parser.add_argument('searchterm',
+            help="Search term.")
+    search_parser.set_defaults(func=search)
+
+    # systems
+    systems_parser = subparsers.add_parser('systems', parents=[common_parser],
+            help="List all available systems.")
+    systems_parser.set_defaults(func=systems)
+
+    # server
+    server_parser = subparsers.add_parser('server',
+            help="Query server info")
+    server_subparsers = server_parser.add_subparsers(metavar="<server command>", title="server commands")
+    server_subparsers.required = True
+
+    # server online
+    online_parser = server_subparsers.add_parser('online', parents=[common_parser],
+            help="Determine whether the Joe Sandbox servers are online or in maintenance mode.")
+    online_parser.set_defaults(func=server_online)
+
+    # server info
+    server_info_parser = server_subparsers.add_parser('info', parents=[common_parser],
+            help="Show information about the server.")
+    server_info_parser.set_defaults(func=server_info)
+
+    # server info
+    server_info_parser = server_subparsers.add_parser('lia_countries', parents=[common_parser],
+            help="Show available localized internet anonymization countries.")
+    server_info_parser.set_defaults(func=server_lia_countries)
+    
+    # Parse common args first, this allows
+    # i.e. jbxapi.py --apikey 1234 list
+    # and  jbxapi.py list --apikey 1234
+    common_args, remaining = common_parser.parse_known_args()
+    args = parser.parse_args(remaining)
+    # overwrite args with common_args
+    vars(args).update(vars(common_args))
+
+    # run command
+    joe = JoeSandbox(apikey=args.apikey, apiurl=args.apiurl, accept_tac=args.accept_tac)
+    try:
+        args.func(joe, args)
+    except ApiError as e:
+        print_json(e.raw, file=sys.stderr)
+        sys.exit(e.code + 100) # api errors start from 100
+    except ConnectionError as e:
+        print_json({
+            "code": 1,
+            "message": str(e),
+        }, file=sys.stderr)
+        sys.exit(3)
+    except (OSError, IOError) as e:
+        print_json({
+            "code": 1,
+            "message": str(e),
+        }, file=sys.stderr)
+        sys.exit(4)
+    except JoeException as e:
+        print_json({
+            "code": 1,
+            "message": str(e),
+        }, file=sys.stderr)
+        sys.exit(5)
 

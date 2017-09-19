@@ -34,7 +34,7 @@ except ImportError:
 
 # API URL.
 API_URL  = "https://jbxcloud.joesecurity.org/api"
-# for on-premise installations, use the following
+# for on-premise installations, use the following URL:
 # API_URL = "http://" + webserveraddress + "/joesandbox/index.php/api"
 
 # APIKEY, to generate goto user settings - API key
@@ -88,6 +88,11 @@ submission_defaults = {
     'hyper-mode': None,
     # export the report to Joe Sandbox View
     'export-to-jbxview': None,
+
+    ## ON PREMISE EXCLUSIVE PARAMETERS
+
+    # priority of submissions
+    'priority': None,
 }
 
 class JoeSandbox(object):
@@ -186,6 +191,7 @@ class JoeSandbox(object):
 
         data['apikey'] = self.apikey
         data['accept-tac'] = "1" if self.accept_tac else "0"
+
         # rename array parameters
         data['systems[]'] = data.pop('systems', None)
         data['tags[]'] = data.pop('tags', None)

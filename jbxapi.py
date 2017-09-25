@@ -165,7 +165,7 @@ class JoeSandbox(object):
         """
         self._check_user_parameters(params)
         params = copy.copy(params)
-        params['sample-url'] = sample
+        params['sample-url'] = url
         return self._submit(params)
 
     def submit_url(self, url, params={}):

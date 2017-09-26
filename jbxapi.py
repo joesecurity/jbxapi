@@ -138,14 +138,17 @@ class JoeSandbox(object):
 
         Example:
 
-            joe = JoeSandbox()
+            import jbxapi
+
+            joe = jbxapi.JoeSandbox()
             with open("sample.exe", "rb") as f:
                 joe.submit_sample(f, params={"systems": ["w7"]})
         
         Example:
 
-            import io.BytesIO
-            joe = JoeSandbox()
+            import io, jbxapi
+
+            joe = jbxapi.JoeSandbox()
 
             cookbook = io.BytesIO(b"cookbook content")
             with open("sample.exe", "rb") as f:

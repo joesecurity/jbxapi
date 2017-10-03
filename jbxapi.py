@@ -17,7 +17,6 @@ from __future__ import division
 import os
 import sys
 import io
-import errno
 import json
 import copy
 import shutil
@@ -33,7 +32,7 @@ except ImportError:
     sys.exit(1)
 
 # API URL.
-API_URL  = "https://jbxcloud.joesecurity.org/api"
+API_URL = "https://jbxcloud.joesecurity.org/api"
 # for on-premise installations, use the following URL:
 # API_URL = "http://" + webserveraddress + "/joesandbox/index.php/api"
 

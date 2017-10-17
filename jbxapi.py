@@ -390,7 +390,7 @@ class JoeSandbox(object):
         try:
             data = response.json()
         except ValueError:
-            raise JoeException("Invalid response. Is the API url correct?")
+            raise JoeException("The server responded with an unexpected format ({}). Is the API url correct?". format(response.status_code))
 
         try:
             if response.ok:
@@ -399,7 +399,7 @@ class JoeSandbox(object):
                 error = data['errors'][0]
                 raise ApiError(error)
         except (KeyError, TypeError):
-            raise JoeException("Invalid response. Is the API url correct?")
+            raise JoeException("Unexpected data ({}). Is the API url correct?". format(response.status_code))
 
 class JoeException(Exception):
     pass

@@ -76,8 +76,6 @@ submission_defaults = {
     'vba-instrumentation': None,
     # instrumentation of javascript
     'js-instrumentation': None,
-    # automatically re-submit dropped PE files if they were not executed by the sample
-    'autosubmit-dropped': None,
     # send an e-mail upon completion of the analysis
     'email-notification': None,
 
@@ -204,7 +202,7 @@ class JoeSandbox(object):
         bool_parameters = {
             "internet-access", "report-cache", "hybrid-code-analysis", "hybrid-decompilation",
             "adaptive-internet-simulation", "ssl-inspection", "hybrid-decompilation",
-            "vba-instrumentation", "autosubmit-dropped", "email-notification", "smart-filter",
+            "vba-instrumentation", "email-notification", "smart-filter",
             "hyper-mode", "export-to-jbxview", "js-instrumentation",
         }
         for key, value in data.items():

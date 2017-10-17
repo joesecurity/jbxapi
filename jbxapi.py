@@ -76,6 +76,8 @@ submission_defaults = {
     'vba-instrumentation': None,
     # instrumentation of javascript
     'js-instrumentation': None,
+    # this parameter does nothing
+    'autosubmit-dropped': None,
     # send an e-mail upon completion of the analysis
     'email-notification': None,
 

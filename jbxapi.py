@@ -76,7 +76,7 @@ submission_defaults = {
     'vba-instrumentation': None,
     # instrumentation of javascript
     'js-instrumentation': None,
-    # this parameter does nothing
+    # DISABLED
     'autosubmit-dropped': None,
     # send an e-mail upon completion of the analysis
     'email-notification': None,
@@ -163,7 +163,7 @@ class JoeSandbox(object):
 
         return self._submit(params, files, _extra_params=_extra_params)
 
-    def submit_sample_url(self, url, params={}):
+    def submit_sample_url(self, url, params={}, _extra_params={}):
         """
         Submit a sample at a given URL for analysis.
         """
@@ -172,22 +172,22 @@ class JoeSandbox(object):
         params['sample-url'] = url
         return self._submit(params)
 
-    def submit_url(self, url, params={}):
+    def submit_url(self, url, params={}, _extra_params={}):
         """
         Submit a website for analysis.
         """
         self._check_user_parameters(params)
         params = copy.copy(params)
         params['url'] = url
-        return self._submit(params)
+        return self._submit(params, _extra_params=_extra_params)
 
-    def submit_cookbook(self, cookbook, params={}):
+    def submit_cookbook(self, cookbook, params={}, _extra_params={}):
         """
         Submit a cookbook.
         """
         self._check_user_parameters(params)
         files = {'cookbook': cookbook}
-        return self._submit(params, files)
+        return self._submit(params, files, _extra_params=_extra_params)
 
     def _submit(self, params, files=None, _extra_params={}):
         data = copy.copy(submission_defaults)
@@ -454,8 +454,13 @@ if __name__ == "__main__":
             values = extra_params.setdefault(name, [])
             values.append(value)
 
-        with open(args.sample, "rb") as f:
-            print_json(joe.submit_sample(f, params=params, _extra_params=extra_params))
+        if args.url_mode:
+            print_json(joe.submit_url(args.sample, params=params, _extra_params=extra_params))
+        elif args.sample_url_mode:
+            print_json(joe.submit_sample_url(args.sample, params=params, _extra_params=extra_params))
+        else:
+            with open(args.sample, "rb") as f:
+                print_json(joe.submit_sample(f, params=params, _extra_params=extra_params))
 
     def server_online(joe, args):
         print_json(joe.server_online())
@@ -537,9 +542,22 @@ if __name__ == "__main__":
 
     # submit <filepath>
     submit_parser = subparsers.add_parser('submit', parents=[common_parser],
+            usage="%(prog)s [--apiurl APIKEY] [--apikey APIKEY] [--accept-tac]\n" +
+                  24 * " " + "[parameters ...]\n" +
+                  24 * " " + "[--url | --sample-url] sample",
             help="Submit a sample to Joe Sandbox.")
     submit_parser.add_argument('sample',
-            help="Path to sample")
+            help="Path or URL to the sample.")
+
+    group = submit_parser.add_argument_group("submission mode")
+    submission_mode_parser = group.add_mutually_exclusive_group(required=False)
+    # url submissions
+    submission_mode_parser.add_argument('--url', dest="url_mode", action="store_true",
+            help="Analyse the given URL instead of a sample.")
+    # sample url submissions
+    submission_mode_parser.add_argument('--sample-url', dest="sample_url_mode", action="store_true",
+            help="Download the sample from the given url.")
+
     submit_parser.add_argument('--param', dest="extra_params", default=[], action="append", nargs=2, metavar=("NAME", "VALUE"),
             help="Specify additional parameters.")
     submit_parser.set_defaults(func=submit)

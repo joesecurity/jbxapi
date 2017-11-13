@@ -438,7 +438,7 @@ class InvalidApiKeyError(ApiError): pass
 class ServerOfflineError(ApiError): pass
 class InternalServerError(ApiError): pass
 
-if __name__ == "__main__":
+def main():
     def print_json(value, file=sys.stdout):
         print(json.dumps(value, indent=4, sort_keys=True), file=file)
 
@@ -703,3 +703,6 @@ if __name__ == "__main__":
         }, file=sys.stderr)
         sys.exit(5)
 
+
+if __name__ == "__main__":
+    main()

@@ -18,7 +18,7 @@ The code is written in Python and licensed under MIT.
 
 ## With Pip
 
-    pip install git+https://github.com/joesecurity/joesandboxcloudapi@v2#egg=jbxapi
+    pip install jbxapi
 
 ## Manually
 
@@ -44,13 +44,11 @@ ACCEPT_TAC  = False
 
 # Documentation CLI
 
-(If you installed `jbxapi.py` using `pip`, call it as a module: `python -m jbxapi [parameters ...]`.)
-
 ## Built-in help
 
 ```bash
->>> jbxapi.py --help
-usage: jbxapi.py [-h] <command> ...
+>>> jbxapi --help
+usage: jbxapi [-h] <command> ...
 
 Joe Sandbox Web API
 

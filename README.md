@@ -69,8 +69,8 @@ commands:
 ```
 
 ```bash
->>> .\jbxapi.py info --help
-usage: jbxapi.py info [-h] [--apiurl APIURL] [--apikey APIKEY] [--accept-tac]
+>>> .\jbxapi info --help
+usage: jbxapi info [-h] [--apiurl APIURL] [--apikey APIKEY] [--accept-tac]
                       webid
 
 positional arguments:
@@ -91,7 +91,7 @@ optional arguments:
 ## Submitting a sample
 
 ```bash
->>> jbxapi.py submit 67.0939148037769.docx
+>>> jbxapi submit 67.0939148037769.docx
 {
     "webids": [265270]
 }
@@ -100,7 +100,7 @@ optional arguments:
 The web ID can be used to track the status:
 
 ```bash
->>> jbxapi.py info 265270
+>>> jbxapi info 265270
 {
     "webid": "265270"
     "status": "finished",
@@ -146,7 +146,7 @@ Check for the field `status` = `finished`. Once the status is `finished` you can
 * Cookbook
 
 ```bash
->>> jbxapi.py report 262018
+>>> jbxapi report 262018
 {
     "analysis": {
         "arch": "WINDOWS",
@@ -169,7 +169,7 @@ Check for the field `status` = `finished`. Once the status is `finished` you can
 Search for an analysis:
 
 ```json
-jbxapi.py search docx
+jbxapi search docx
 [
     {
         "webid": "262018"

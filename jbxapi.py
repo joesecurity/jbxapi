@@ -250,8 +250,8 @@ class JoeSandbox(object):
         The full list of resources can be found in our API documentation.
 
         When `file` is given, the return value is the filename specified by the server,
-        otherwise its a tuple of (filename, bytes) with the filename and the content.
-        
+        otherwise it's a tuple of (filename, bytes).
+
         Parameters:
             webid: the webid of the analysis
             type: the report type, e.g. 'html', 'bins'
@@ -261,12 +261,12 @@ class JoeSandbox(object):
 
         Example:
 
-            json_report = joe.download(123456, 'jsonfixed')
-            
+            json_report, name = joe.download(123456, 'jsonfixed')
+
         Example:
-            
+
             with open("full_report.html", "wb") as f:
-                joe.download(123456, "html", file=f)
+                name = joe.download(123456, "html", file=f)
         """
 
         # when no file is specified, we create our own

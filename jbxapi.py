@@ -97,7 +97,7 @@ submission_defaults = {
 }
 
 class JoeSandbox(object):
-    def __init__(self, apikey=API_KEY, apiurl=API_URL, accept_tac=ACCEPT_TAC, timeout=None, verify_ssl=True, retries=3):
+    def __init__(self, apikey=API_KEY, apiurl=API_URL, accept_tac=ACCEPT_TAC, timeout=None, verify_ssl=True, retries=3, proxies=None):
         """
         Create a JoeSandbox object.
 
@@ -109,6 +109,8 @@ class JoeSandbox(object):
           timeout:    Timeout in seconds for accessing the API. Raises a ConnectionError on timeout.
           verify_ssl: Enable or disable checking SSL certificates.
           retries:    Number of times requests should be retried if they timeout.
+          proxies:    Proxy settings, see the requests library for more information:
+                      http://docs.python-requests.org/en/master/user/advanced/#proxies
         """
         self.apikey = apikey
         self.apiurl = apiurl.rstrip("/")
@@ -118,6 +120,7 @@ class JoeSandbox(object):
 
         self.session = requests.Session()
         self.session.verify = verify_ssl
+        self.session.proxies = proxies
 
     def list(self):
         """

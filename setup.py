@@ -1,7 +1,7 @@
 from setuptools import setup
 
 setup(name='jbxapi',
-      version='2.2.1',
+      version='2.3.0',
       description='API for Joe Sandbox',
       url='https://github.com/joesecurity/joesandboxcloudapi',
       author='Joe Security LLC',

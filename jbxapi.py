@@ -135,7 +135,8 @@ class JoeSandbox(object):
         Submit a sample and returns the associated webids for the samples.
 
         Parameters:
-          sample:       The sample to submit. Needs to be a file-like object.
+          sample:       The sample to submit. Needs to be a file-like object or a tuple in
+                        the shape (filename, file-like-object).
           cookbook:     Uploads a cookbook together with the sample.
           params:       Customize the sandbox parameters. They are described in more detail
                         in the default submission parameters.
@@ -463,7 +464,11 @@ def main():
             print_json(joe.submit_sample_url(args.sample, params=params, _extra_params=extra_params))
         else:
             with open(args.sample, "rb") as f:
-                print_json(joe.submit_sample(f, params=params, _extra_params=extra_params))
+                if args.cookbook is not None:
+                    with open(args.cookbook, "rb") as f_cookbook:
+                        print_json(joe.submit_sample(f, params=params, _extra_params=extra_params, cookbook=f_cookbook))
+                else:
+                    print_json(joe.submit_sample(f, params=params, _extra_params=extra_params))
 
     def server_online(joe, args):
         print_json(joe.server_online())
@@ -547,7 +552,8 @@ def main():
     submit_parser = subparsers.add_parser('submit', parents=[common_parser],
             usage="%(prog)s [--apiurl APIKEY] [--apikey APIKEY] [--accept-tac]\n" +
                   24 * " " + "[parameters ...]\n" +
-                  24 * " " + "[--url | --sample-url] sample",
+                  24 * " " + "[--url | --sample-url | --cookbook COOKBOOK]\n" +
+                  24 * " " + "sample",
             help="Submit a sample to Joe Sandbox.")
     submit_parser.add_argument('sample',
             help="Path or URL to the sample.")
@@ -560,6 +566,9 @@ def main():
     # sample url submissions
     submission_mode_parser.add_argument('--sample-url', dest="sample_url_mode", action="store_true",
             help="Download the sample from the given url.")
+    # cookbook submission
+    submission_mode_parser.add_argument('--cookbook', dest="cookbook",
+            help="Use the given cookbook.")
 
     submit_parser.add_argument('--param', dest="extra_params", default=[], action="append", nargs=2, metavar=("NAME", "VALUE"),
             help="Specify additional parameters.")

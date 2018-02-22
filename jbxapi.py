@@ -351,15 +351,35 @@ class JoeSandbox(object):
 
         return self._raise_or_extract(response)
 
-    def _post(self, *args, **kwargs):
-        """ Wrapper around requests.post which
+    def _post(self, url, data=None, json=None, **kwargs):
+        """
+        Wrapper around requests.post which
+
             (a) always inserts a timeout
             (b) converts errors to ConnectionError
             (c) re-tries a few times
+            (d) converts file names to ASCII
         """
+
+        # Remove non-ASCII characters from filenames due to a limitation of the combination of
+        # urllib3 (via python-requests) and our server
+        # https://github.com/requests/requests/issues/2117
+        # Internal Ticket #3090
+        if "files" in kwargs:
+            for param_name, fp in kwargs["files"].items():
+                filename = requests.utils.guess_filename(fp) or param_name
+
+                def encode(char):
+                    if ord(char) < 128 and char not in r'<>:"/\|?*':
+                        return char
+                    return "x{:02x}".format(ord(char))
+                filename = "".join(encode(x) for x in filename)
+
+                kwargs["files"][param_name] = (filename, fp)
+
         for i in itertools.count(1):
             try:
-                return self.session.post(*args, timeout=self.timeout, **kwargs)
+                return self.session.post(url, data=data, json=json, timeout=self.timeout, **kwargs)
             except requests.exceptions.Timeout as e:
                 # exhausted all retries
                 if i >= self.retries:

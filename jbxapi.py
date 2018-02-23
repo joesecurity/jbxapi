@@ -68,16 +68,12 @@ submission_defaults = {
     'hybrid-code-analysis': None,
     # hybrid decompilation
     'hybrid-decompilation': None,
-    # adaptive internet simulation
-    'adaptive-internet-simulation': None,
     # inspect ssl traffic
     'ssl-inspection': None,
     # instrumentation of vba scripts
     'vba-instrumentation': None,
     # instrumentation of javascript
     'js-instrumentation': None,
-    # DISABLED
-    'autosubmit-dropped': None,
     # send an e-mail upon completion of the analysis
     'email-notification': None,
 
@@ -94,6 +90,10 @@ submission_defaults = {
 
     # priority of submissions
     'priority': None,
+
+    # removed parameters
+    'autosubmit-dropped': None,
+    'adaptive-internet-simulation': None,
 }
 
 class JoeSandbox(object):

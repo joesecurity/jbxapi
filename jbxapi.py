@@ -44,7 +44,7 @@ API_KEY = ""
 # (for Joe Sandbox Cloud only)
 # Set to True if you agree to the Terms and Conditions.
 # https://jbxcloud.joesecurity.org/resources/termsandconditions.pdf
-ACCEPT_TAC  = False
+ACCEPT_TAC = False
 
 # default submission parameters
 # when specifying None, the server decides

@@ -1,7 +1,25 @@
+import re
+import os
+
 from setuptools import setup
 
+
+def get_version():
+    """ Extract the version number from the code. """
+    here = os.path.abspath(os.path.dirname(__file__))
+    jbxapi_file = os.path.join(here, "jbxapi.py")
+
+    with open(jbxapi_file) as f:
+        content = f.read()
+        match = re.search(r"^__version__ = ['\"]([^'\"]*)['\"]", content, re.M)
+
+    if not match:
+        raise RuntimeError("Unable to find version string.")
+    return match.group(1)
+
+
 setup(name='jbxapi',
-      version='2.4.2',
+      version=get_version(),
       description='API for Joe Sandbox',
       url='https://github.com/joesecurity/joesandboxcloudapi',
       author='Joe Security LLC',

@@ -32,6 +32,8 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
+__version__ = "2.4.3"
+
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
 # for on-premise installations, use the following URL:
@@ -557,6 +559,8 @@ def main():
         help="(Joe Sandbox Cloud only): Accept the terms and conditions: "
         "https://jbxcloud.joesecurity.org/download/termsandconditions.pdf "
         "(You can also modify the ACCEPT_TAC variable inside the script.)")
+    common_parser.add_argument('--version', action='store_true',
+        help="Show version and exit.")
 
     parser = argparse.ArgumentParser(description="Joe Sandbox Web API")
 
@@ -706,6 +710,11 @@ def main():
     # i.e. jbxapi.py --apikey 1234 list
     # and  jbxapi.py list --apikey 1234
     common_args, remaining = common_parser.parse_known_args()
+
+    if common_args.version:
+        print(__version__)
+        sys.exit()
+
     args = parser.parse_args(remaining)
     # overwrite args with common_args
     vars(args).update(vars(common_args))

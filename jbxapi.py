@@ -24,7 +24,6 @@ import argparse
 import time
 import itertools
 import random
-import string
 
 try:
     import requests
@@ -368,12 +367,14 @@ class JoeSandbox(object):
         # urllib3 (via python-requests) and our server
         # https://github.com/requests/requests/issues/2117
         # Internal Ticket #3090
+        acceptable_chars = "0123456789" + "abcdefghijklmnopqrstuvwxyz" + \
+                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + " _-.,()[]{}"
         if "files" in kwargs:
             for param_name, fp in kwargs["files"].items():
                 filename = requests.utils.guess_filename(fp) or param_name
 
                 def encode(char):
-                    if char in string.printable and char not in r'<>:"/\|?*':
+                    if char in acceptable_chars:
                         return char
                     return "x{:02x}".format(ord(char))
                 filename = "".join(encode(x) for x in filename)

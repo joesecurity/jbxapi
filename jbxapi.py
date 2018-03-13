@@ -24,6 +24,7 @@ import argparse
 import time
 import itertools
 import random
+import string
 
 try:
     import requests
@@ -370,7 +371,7 @@ class JoeSandbox(object):
                 filename = requests.utils.guess_filename(fp) or param_name
 
                 def encode(char):
-                    if ord(char) < 128 and char not in r'<>:"/\|?*':
+                    if char in string.printable and char not in r'<>:"/\|?*':
                         return char
                     return "x{:02x}".format(ord(char))
                 filename = "".join(encode(x) for x in filename)

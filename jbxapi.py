@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.4.3"
+__version__ = "2.4.4"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -374,8 +374,11 @@ class JoeSandbox(object):
                 filename = requests.utils.guess_filename(fp) or param_name
 
                 def encode(char):
-                    if char in acceptable_chars:
-                        return char
+                    try:
+                        if char in acceptable_chars:
+                            return char
+                    except UnicodeDecodeError:
+                        pass
                     return "x{:02x}".format(ord(char))
                 filename = "".join(encode(x) for x in filename)
 

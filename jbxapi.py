@@ -78,15 +78,17 @@ submission_defaults = {
     'js-instrumentation': None,
     # send an e-mail upon completion of the analysis
     'email-notification': None,
+    # Only run static analysis. Disables the dynamic analysis.
+    'static-only': None,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
-    # filter benign samples
-    'smart-filter': None,
     # select hyper mode for a faster but less thorough analysis
     'hyper-mode': None,
     # export the report to Joe Sandbox View
     'export-to-jbxview': None,
+    # lookup the reputation of URLs and domains (Requires sending URLs third-party services.)
+    'url-reputation': None,
 
     ## ON PREMISE EXCLUSIVE PARAMETERS
 
@@ -96,6 +98,7 @@ submission_defaults = {
     # removed parameters
     'autosubmit-dropped': None,
     'adaptive-internet-simulation': None,
+    'smart-filter': None,
 }
 
 class JoeSandbox(object):

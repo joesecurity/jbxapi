@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.4.4"
+__version__ = "2.5.1"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -481,7 +481,7 @@ def main():
 
     def submit(joe, args):
         params = {name[6:]: value for name, value in vars(args).items()
-                                  if name.startswith("param-")}
+                                  if name.startswith("param-") and value is not None}
 
         extra_params = {}
         for name, value in args.extra_params:

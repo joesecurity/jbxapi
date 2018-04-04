@@ -372,7 +372,7 @@ class JoeSandbox(object):
         # Internal Ticket #3090
         acceptable_chars = "0123456789" + "abcdefghijklmnopqrstuvwxyz" + \
                            "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + " _-.,()[]{}"
-        if "files" in kwargs:
+        if "files" in kwargs and kwargs["files"] != None:
             for param_name, fp in kwargs["files"].items():
                 filename = requests.utils.guess_filename(fp) or param_name
 

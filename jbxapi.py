@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.5.1"
+__version__ = "2.5.2"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -370,9 +370,9 @@ class JoeSandbox(object):
         # urllib3 (via python-requests) and our server
         # https://github.com/requests/requests/issues/2117
         # Internal Ticket #3090
-        acceptable_chars = "0123456789" + "abcdefghijklmnopqrstuvwxyz" + \
-                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + " _-.,()[]{}"
-        if "files" in kwargs and kwargs["files"] != None:
+        if "files" in kwargs and kwargs["files"] is not None:
+            acceptable_chars = "0123456789" + "abcdefghijklmnopqrstuvwxyz" + \
+                               "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + " _-.,()[]{}"
             for param_name, fp in kwargs["files"].items():
                 filename = requests.utils.guess_filename(fp) or param_name
 

@@ -650,8 +650,6 @@ def main():
             help="Enable hybrid code analysis (on by default).")
     add_bool_param("--dec", dest="param-hybrid-decompilation",
             help="Enable hybrid decompilation.")
-    add_bool_param("--ais", dest="param-adaptive-internet-simulation",
-            help="Enable adaptive internet simulation.")
     add_bool_param("--ssl-inspection", dest="param-ssl-inspection",
             help="Inspect SSL traffic")
     add_bool_param("--vbainstr", dest="param-vba-instrumentation",

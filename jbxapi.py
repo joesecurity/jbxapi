@@ -664,11 +664,11 @@ def main():
             help="Bypass time-aware samples.")
     params.add_argument("--localized-internet-country", "--lia", dest="param-localized-internet-country", metavar="NAME",
             help="Country for routing internet traffic through.")
-    params.add_argument("--keyboard-layout", "--kb", dest="param-keyboard-layout", metavar="NAME",
+    params.add_argument("--keyboard-layout", "--keyboard", dest="param-keyboard-layout", metavar="NAME",
             help="Keyboard layout to be set on Windows analyzer.")
     params.add_argument("--tag", dest="param-tags", action="append", metavar="TAG",
             help="Add tags to the analysis.")
-    params.add_argument("--delete-after-days", "--delafter", dest="param-delete-after-days", action="append", metavar="DAYS",
+    params.add_argument("--delete-after-days", "--delafter", dest="param-delete-after-days", metavar="DAYS",
             help="Delete analysis after X days.")
 
     # info <webid>

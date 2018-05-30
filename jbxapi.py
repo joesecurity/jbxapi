@@ -641,13 +641,13 @@ def main():
     params.add_argument("--analysis-time", dest="param-analysis-time", metavar="SEC",
             help="Analysis time in seconds.")
     add_bool_param("--internet", dest="param-internet-access",
-            help="Enable Internet Access.")
+            help="Enable Internet Access (on by default).")
     add_bool_param("--cache", dest="param-report-cache",
             help="Check cache for a report before analyzing the sample.")
     params.add_argument("--office-pw", dest="param-office-files-password", metavar="PASSWORD",
             help="Password for decrypting office files.")
     add_bool_param("--hca", dest="param-hybrid-code-analysis",
-            help="Enable hybrid code analysis.")
+            help="Enable hybrid code analysis (on by default).")
     add_bool_param("--dec", dest="param-hybrid-decompilation",
             help="Enable hybrid decompilation.")
     add_bool_param("--ais", dest="param-adaptive-internet-simulation",
@@ -655,11 +655,11 @@ def main():
     add_bool_param("--ssl-inspection", dest="param-ssl-inspection",
             help="Inspect SSL traffic")
     add_bool_param("--vbainstr", dest="param-vba-instrumentation",
-            help="Enable VBA script instrumentation.")
+            help="Enable VBA script instrumentation (on by default).")
     add_bool_param("--jsinstr", dest="param-js-instrumentation",
-            help="Enable JavaScript instrumentation.")
+            help="Enable JavaScript instrumentation (on by default).")
     add_bool_param("--java", dest="param-java-jar-tracing",
-            help="Enable Java JAR tracing.")
+            help="Enable Java JAR tracing (on by default).")
     add_bool_param("--normal-user", dest="param-start-as-normal-user",
             help="Start sample as normal user.")
     add_bool_param("--date-evasion", dest="param-anti-evasion-date",

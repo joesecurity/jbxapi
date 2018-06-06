@@ -708,10 +708,10 @@ def main():
             help="Show information about the server.")
     server_info_parser.set_defaults(func=server_info)
 
-    # server info
-    server_info_parser = server_subparsers.add_parser('lia_countries', parents=[common_parser],
+    # server lia
+    server_lia_parser = server_subparsers.add_parser('lia_countries', parents=[common_parser],
             help="Show available localized internet anonymization countries.")
-    server_info_parser.set_defaults(func=server_lia_countries)
+    server_lia_parser.set_defaults(func=server_lia_countries)
     
     # Parse common args first, this allows
     # i.e. jbxapi.py --apikey 1234 list

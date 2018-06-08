@@ -97,7 +97,7 @@ submission_defaults = {
     'export-to-jbxview': None,
     # lookup the reputation of URLs and domains (Requires sending URLs third-party services.)
     'url-reputation': None,
-    # Delete the analysis after X days. If not set, the default value on the Cloud instance is used
+    # Delete the analysis after X days
     'delete-after-days': None,
 
     ## ON PREMISE EXCLUSIVE PARAMETERS
@@ -660,7 +660,7 @@ def main():
             help="Enable Java JAR tracing (on by default).")
     add_bool_param("--normal-user", dest="param-start-as-normal-user",
             help="Start sample as normal user.")
-    add_bool_param("--date-evasion", dest="param-anti-evasion-date",
+    add_bool_param("--anti-evasion-date", dest="param-anti-evasion-date",
             help="Bypass time-aware samples.")
     params.add_argument("--localized-internet-country", "--lia", dest="param-localized-internet-country", metavar="NAME",
             help="Country for routing internet traffic through.")
@@ -668,7 +668,7 @@ def main():
             help="Keyboard layout to be set on Windows analyzer.")
     params.add_argument("--tag", dest="param-tags", action="append", metavar="TAG",
             help="Add tags to the analysis.")
-    params.add_argument("--delete-after-days", "--delafter", dest="param-delete-after-days", metavar="DAYS",
+    params.add_argument("--delete-after-days", "--delafter", type=int, dest="param-delete-after-days", metavar="DAYS",
             help="Delete analysis after X days.")
 
     # info <webid>
@@ -737,15 +737,15 @@ def main():
             help="Show information about the server.")
     server_info_parser.set_defaults(func=server_info)
 
-    # server info
-    server_info_parser = server_subparsers.add_parser('lia_countries', parents=[common_parser],
+    # server lia countries
+    server_lia_parser = server_subparsers.add_parser('lia_countries', parents=[common_parser],
             help="Show available localized internet anonymization countries.")
-    server_info_parser.set_defaults(func=server_lia_countries)
+    server_lia_parser.set_defaults(func=server_lia_countries)
 
-    # server info
-    server_info_parser = server_subparsers.add_parser('keyboard_layouts', parents=[common_parser],
+    # server keyboard layouts
+    server_keyboard_parser = server_subparsers.add_parser('keyboard_layouts', parents=[common_parser],
             help="Show available keyboard layouts for Windows.")
-    server_info_parser.set_defaults(func=server_keyboard_layouts)
+    server_keyboard_parser.set_defaults(func=server_keyboard_layouts)
 
     # Parse common args first, this allows
     # i.e. jbxapi.py --apikey 1234 list

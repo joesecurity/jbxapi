@@ -76,10 +76,18 @@ submission_defaults = {
     'vba-instrumentation': None,
     # instrumentation of javascript
     'js-instrumentation': None,
+    # traces Java JAR files
+    'java-jar-tracing': None,
     # send an e-mail upon completion of the analysis
     'email-notification': None,
-    # Only run static analysis. Disables the dynamic analysis.
+    # only run static analysis. Disables the dynamic analysis.
     'static-only': None,
+    # starts the Sample with normal user privileges
+    'start-as-normal-user': None,
+    # tries to bypass time-aware samples which check the system date
+    'anti-evasion-date': None,
+    # changes the keyboard layout of the analysis machine
+    'keyboard-layout': None,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
@@ -89,6 +97,8 @@ submission_defaults = {
     'export-to-jbxview': None,
     # lookup the reputation of URLs and domains (Requires sending URLs third-party services.)
     'url-reputation': None,
+    # Delete the analysis after X days
+    'delete-after-days': None,
 
     ## ON PREMISE EXCLUSIVE PARAMETERS
 
@@ -153,7 +163,7 @@ class JoeSandbox(object):
             joe = jbxapi.JoeSandbox()
             with open("sample.exe", "rb") as f:
                 joe.submit_sample(f, params={"systems": ["w7"]})
-        
+
         Example:
 
             import io, jbxapi
@@ -214,7 +224,7 @@ class JoeSandbox(object):
             "internet-access", "report-cache", "hybrid-code-analysis", "hybrid-decompilation",
             "adaptive-internet-simulation", "ssl-inspection", "hybrid-decompilation",
             "vba-instrumentation", "email-notification", "smart-filter",
-            "hyper-mode", "export-to-jbxview", "js-instrumentation",
+            "hyper-mode", "export-to-jbxview", "js-instrumentation", "java-jar-tracing", "start-as-normal-user", "anti-evasion-date",
         }
         for key, value in data.items():
             if value is not None and key in bool_parameters:
@@ -233,7 +243,7 @@ class JoeSandbox(object):
         response = self._post(self.apiurl + '/v2/server/online', data={'apikey': self.apikey})
 
         return self._raise_or_extract(response)
-        
+
     def info(self, webid):
         """
         Show the status and most important attributes of an analysis.
@@ -241,7 +251,7 @@ class JoeSandbox(object):
         response = self._post(self.apiurl + "/v2/analysis/info", data={'apikey': self.apikey, 'webid': webid})
 
         return self._raise_or_extract(response)
-        
+
     def delete(self, webid):
         """
         Delete an analysis.
@@ -329,7 +339,7 @@ class JoeSandbox(object):
         response = self._post(self.apiurl + "/v2/server/systems", data={'apikey': self.apikey})
 
         return self._raise_or_extract(response)
-        
+
     def account_info(self):
         """
         Only available on Joe Sandbox Cloud
@@ -353,6 +363,14 @@ class JoeSandbox(object):
         Show the available localized internet anonymization countries.
         """
         response = self._post(self.apiurl + "/v2/server/lia_countries", data={'apikey': self.apikey})
+
+        return self._raise_or_extract(response)
+
+    def server_keyboard_layouts(self):
+        """
+        Show the available keyboard layouts
+        """
+        response = self._post(self.apiurl + "/v2/server/keyboard_layouts", data={'apikey': self.apikey})
 
         return self._raise_or_extract(response)
 
@@ -459,7 +477,7 @@ class ApiError(JoeException):
                 pass
 
         return super(ApiError, cls).__new__(cls, raw["message"])
-    
+
     def __init__(self, raw):
         super(ApiError, self).__init__(raw["message"])
         self.raw = copy.deepcopy(raw)
@@ -514,6 +532,9 @@ def main():
 
     def server_lia_countries(joe, args):
         print_json(joe.server_lia_countries())
+
+    def server_keyboard_layouts(joe, args):
+        print_json(joe.server_keyboard_layouts())
 
     def report(joe, args):
         (_, report) = joe.download(args.webid, type="irjsonfixed", run=args.run)
@@ -620,27 +641,35 @@ def main():
     params.add_argument("--analysis-time", dest="param-analysis-time", metavar="SEC",
             help="Analysis time in seconds.")
     add_bool_param("--internet", dest="param-internet-access",
-            help="Enable Internet Access.")
+            help="Enable Internet Access (on by default).")
     add_bool_param("--cache", dest="param-report-cache",
             help="Check cache for a report before analyzing the sample.")
     params.add_argument("--office-pw", dest="param-office-files-password", metavar="PASSWORD",
             help="Password for decrypting office files.")
     add_bool_param("--hca", dest="param-hybrid-code-analysis",
-            help="Enable hybrid code analysis.")
+            help="Enable hybrid code analysis (on by default).")
     add_bool_param("--dec", dest="param-hybrid-decompilation",
             help="Enable hybrid decompilation.")
-    add_bool_param("--ais", dest="param-adaptive-internet-simulation",
-            help="Enable adaptive internet simulation.")
     add_bool_param("--ssl-inspection", dest="param-ssl-inspection",
             help="Inspect SSL traffic")
     add_bool_param("--vbainstr", dest="param-vba-instrumentation",
-            help="Enable VBA script instrumentation.")
+            help="Enable VBA script instrumentation (on by default).")
     add_bool_param("--jsinstr", dest="param-js-instrumentation",
-            help="Enable JavaScript instrumentation.")
+            help="Enable JavaScript instrumentation (on by default).")
+    add_bool_param("--java", dest="param-java-jar-tracing",
+            help="Enable Java JAR tracing (on by default).")
+    add_bool_param("--normal-user", dest="param-start-as-normal-user",
+            help="Start sample as normal user.")
+    add_bool_param("--anti-evasion-date", dest="param-anti-evasion-date",
+            help="Bypass time-aware samples.")
     params.add_argument("--localized-internet-country", "--lia", dest="param-localized-internet-country", metavar="NAME",
             help="Country for routing internet traffic through.")
+    params.add_argument("--keyboard-layout", "--keyboard", dest="param-keyboard-layout", metavar="NAME",
+            help="Keyboard layout to be set on Windows analyzer.")
     params.add_argument("--tag", dest="param-tags", action="append", metavar="TAG",
             help="Add tags to the analysis.")
+    params.add_argument("--delete-after-days", "--delafter", type=int, dest="param-delete-after-days", metavar="DAYS",
+            help="Delete analysis after X days.")
 
     # info <webid>
     info_parser = subparsers.add_parser('info', parents=[common_parser],
@@ -708,11 +737,16 @@ def main():
             help="Show information about the server.")
     server_info_parser.set_defaults(func=server_info)
 
-    # server lia
+    # server lia countries
     server_lia_parser = server_subparsers.add_parser('lia_countries', parents=[common_parser],
             help="Show available localized internet anonymization countries.")
     server_lia_parser.set_defaults(func=server_lia_countries)
-    
+
+    # server keyboard layouts
+    server_keyboard_parser = server_subparsers.add_parser('keyboard_layouts', parents=[common_parser],
+            help="Show available keyboard layouts for Windows.")
+    server_keyboard_parser.set_defaults(func=server_keyboard_layouts)
+
     # Parse common args first, this allows
     # i.e. jbxapi.py --apikey 1234 list
     # and  jbxapi.py list --apikey 1234

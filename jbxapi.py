@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 # License: MIT
-# Copyright Joe Security 2017
+# Copyright Joe Security 2018
 
 """
 jbxapi.py serves two purposes.
@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.5.3"
+__version__ = "2.6.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"

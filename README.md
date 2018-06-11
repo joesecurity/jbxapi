@@ -88,14 +88,27 @@ optional arguments:
                    the script.)
 ```
 
-## Submitting a sample
+## Starting an analysis
+
+### Samples
 
 ```bash
 >>> jbxapi submit 67.0939148037769.docx
 {
-    "webids": [265270]
+    "webids": ["251231"]
 }
 ```
+
+### URLs
+
+```bash
+>>> jbxapi submit --url http://example.net
+{
+    "webids": ["265270"]
+}
+```
+
+## Getting information about an analysis
 
 The web ID can be used to track the status:
 
@@ -120,7 +133,9 @@ The web ID can be used to track the status:
 }
 ```
 
-Check for the field `status` = `finished`. Once the status is `finished` you can download various reports and analysis artifacts:
+## Download reports and analysis artifacts
+
+Once the `status` is `finished`, you can download various reports and analysis artifacts:
 
 * HTML
 * PDF

@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.6.1"
+__version__ = "2.6.2"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -791,4 +791,37 @@ def main():
 
 
 if __name__ == "__main__":
+    # Workaround for a bug in Python 2.7 where sys.argv arguments are converted to ASCII and
+    # non-ascii characters are replaced with '?'.
+    #
+    # https://bugs.python.org/issue2128
+    # https://stackoverflow.com/q/846850/
+    if sys.version_info[0] == 2 and sys.platform.startswith('win32'):
+        def win32_unicode_argv():
+            """Uses shell32.GetCommandLineArgvW to get sys.argv as a list of Unicode strings.
+            """
+
+            from ctypes import POINTER, byref, cdll, c_int, windll
+            from ctypes.wintypes import LPCWSTR, LPWSTR
+
+            GetCommandLineW = cdll.kernel32.GetCommandLineW
+            GetCommandLineW.argtypes = []
+            GetCommandLineW.restype = LPCWSTR
+
+            CommandLineToArgvW = windll.shell32.CommandLineToArgvW
+            CommandLineToArgvW.argtypes = [LPCWSTR, POINTER(c_int)]
+            CommandLineToArgvW.restype = POINTER(LPWSTR)
+
+            cmd = GetCommandLineW()
+            argc = c_int(0)
+            argv = CommandLineToArgvW(cmd, byref(argc))
+            if argc.value > 0:
+                # Remove Python executable and commands if present
+                start = argc.value - len(sys.argv)
+                return [argv[i] for i in
+                        xrange(start, argc.value)]
+
+        sys.argv = win32_unicode_argv()
+
+    # call main function
     main()

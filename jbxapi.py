@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.6.2"
+__version__ = "2.7.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -151,8 +151,9 @@ class JoeSandbox(object):
 
         Parameters:
           sample:       The sample to submit. Needs to be a file-like object or a tuple in
-                        the shape (filename, file-like-object).
-          cookbook:     Uploads a cookbook together with the sample.
+                        the shape (filename, file-like object).
+          cookbook:     Uploads a cookbook together with the sample. Needs to be a file-like object or a
+                        tuple in the shape (filename, file-like object)
           params:       Customize the sandbox parameters. They are described in more detail
                         in the default submission parameters.
 
@@ -208,16 +209,13 @@ class JoeSandbox(object):
         files = {'cookbook': cookbook}
         return self._submit(params, files, _extra_params=_extra_params)
 
-    def _submit(self, params, files=None, _extra_params={}):
-        data = copy.copy(submission_defaults)
-        data.update(params)
-
-        data['apikey'] = self.apikey
-        data['accept-tac'] = "1" if self.accept_tac else "0"
+    def _prepare_params_for_submission(self, params):
+        params['apikey'] = self.apikey
+        params['accept-tac'] = "1" if self.accept_tac else "0"
 
         # rename array parameters
-        data['systems[]'] = data.pop('systems', None)
-        data['tags[]'] = data.pop('tags', None)
+        params['systems[]'] = params.pop('systems', None)
+        params['tags[]'] = params.pop('tags', None)
 
         # submit booleans as "0" and "1"
         bool_parameters = {
@@ -226,10 +224,16 @@ class JoeSandbox(object):
             "vba-instrumentation", "email-notification", "smart-filter",
             "hyper-mode", "export-to-jbxview", "js-instrumentation", "java-jar-tracing", "start-as-normal-user", "anti-evasion-date",
         }
-        for key, value in data.items():
+        for key, value in params.items():
             if value is not None and key in bool_parameters:
-                data[key] = "1" if value else "0"
+                params[key] = "1" if value else "0"
 
+        return params
+
+    def _submit(self, params, files=None, _extra_params={}):
+        data = copy.copy(submission_defaults)
+        data.update(params)
+        data = self._prepare_params_for_submission(data)
         data.update(_extra_params)
 
         response = self._post(self.apiurl + '/v2/analysis/submit', data=data, files=files)
@@ -374,7 +378,7 @@ class JoeSandbox(object):
 
         return self._raise_or_extract(response)
 
-    def _post(self, url, data=None, json=None, **kwargs):
+    def _post(self, url, data=None, **kwargs):
         """
         Wrapper around requests.post which
 
@@ -410,7 +414,7 @@ class JoeSandbox(object):
 
         for i in itertools.count(1):
             try:
-                return self.session.post(url, data=data, json=json, timeout=self.timeout, **kwargs)
+                return self.session.post(url, data=data, timeout=self.timeout, **kwargs)
             except requests.exceptions.Timeout as e:
                 # exhausted all retries
                 if i >= self.retries:
@@ -493,7 +497,7 @@ class InvalidApiKeyError(ApiError): pass
 class ServerOfflineError(ApiError): pass
 class InternalServerError(ApiError): pass
 
-def main():
+def cli(argv):
     def print_json(value, file=sys.stdout):
         print(json.dumps(value, indent=4, sort_keys=True), file=file)
 
@@ -753,7 +757,7 @@ def main():
     # Parse common args first, this allows
     # i.e. jbxapi.py --apikey 1234 list
     # and  jbxapi.py list --apikey 1234
-    common_args, remaining = common_parser.parse_known_args()
+    common_args, remaining = common_parser.parse_known_args(argv)
 
     if common_args.version:
         print(__version__)
@@ -790,7 +794,7 @@ def main():
         sys.exit(5)
 
 
-if __name__ == "__main__":
+def main(argv=None):
     # Workaround for a bug in Python 2.7 where sys.argv arguments are converted to ASCII and
     # non-ascii characters are replaced with '?'.
     #
@@ -823,5 +827,8 @@ if __name__ == "__main__":
 
         sys.argv = win32_unicode_argv()
 
-    # call main function
+    cli(argv if argv is not None else sys.argv[1:])
+
+
+if __name__ == "__main__":
     main()

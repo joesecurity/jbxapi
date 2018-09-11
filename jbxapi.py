@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.7.0"
+__version__ = "2.7.1"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -88,11 +88,15 @@ submission_defaults = {
     'anti-evasion-date': None,
     # changes the keyboard layout of the analysis machine
     'keyboard-layout': None,
+    # Do not unpack archive files (zip, 7zip etc).
+    'archive-no-unpack': None,
+    # Enable Hypervisor based Inspection
+    "hypervisor-based-inspection": None,
+    # select hyper mode for a faster but less thorough analysis
+    'hyper-mode': None,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
-    # select hyper mode for a faster but less thorough analysis
-    'hyper-mode': None,
     # export the report to Joe Sandbox View
     'export-to-jbxview': None,
     # lookup the reputation of URLs and domains (Requires sending URLs third-party services.)
@@ -222,7 +226,7 @@ class JoeSandbox(object):
             "internet-access", "report-cache", "hybrid-code-analysis", "hybrid-decompilation",
             "adaptive-internet-simulation", "ssl-inspection", "hybrid-decompilation",
             "vba-instrumentation", "email-notification", "smart-filter",
-            "hyper-mode", "export-to-jbxview", "js-instrumentation", "java-jar-tracing", "start-as-normal-user", "anti-evasion-date",
+            "hyper-mode", "export-to-jbxview", "js-instrumentation", "java-jar-tracing", "start-as-normal-user", "anti-evasion-date", "archive-no-unpack", "hypervisor-based-inspection"
         }
         for key, value in params.items():
             if value is not None and key in bool_parameters:
@@ -669,6 +673,10 @@ def cli(argv):
             help="Start sample as normal user.")
     add_bool_param("--anti-evasion-date", dest="param-anti-evasion-date",
             help="Bypass time-aware samples.")
+    add_bool_param("--archive-no-unpack", dest="param-archive-no-unpack",
+            help="Do not unpack archive (zip, 7zip etc).")
+    add_bool_param("--hypervisor-based-inspection", dest="param-hypervisor-based-inspection",
+            help="Enable Hypervisor based Inspection.")			
     params.add_argument("--localized-internet-country", "--lia", dest="param-localized-internet-country", metavar="NAME",
             help="Country for routing internet traffic through.")
     params.add_argument("--keyboard-layout", "--keyboard", dest="param-keyboard-layout", metavar="NAME",

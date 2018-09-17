@@ -226,7 +226,9 @@ class JoeSandbox(object):
             "internet-access", "report-cache", "hybrid-code-analysis", "hybrid-decompilation",
             "adaptive-internet-simulation", "ssl-inspection", "hybrid-decompilation",
             "vba-instrumentation", "email-notification", "smart-filter",
-            "hyper-mode", "export-to-jbxview", "js-instrumentation", "java-jar-tracing", "start-as-normal-user", "anti-evasion-date", "archive-no-unpack", "hypervisor-based-inspection"
+            "hyper-mode", "export-to-jbxview", "js-instrumentation", "java-jar-tracing",
+            "start-as-normal-user", "anti-evasion-date", "archive-no-unpack",
+            "hypervisor-based-inspection",
         }
         for key, value in params.items():
             if value is not None and key in bool_parameters:
@@ -676,7 +678,7 @@ def cli(argv):
     add_bool_param("--archive-no-unpack", dest="param-archive-no-unpack",
             help="Do not unpack archive (zip, 7zip etc).")
     add_bool_param("--hypervisor-based-inspection", dest="param-hypervisor-based-inspection",
-            help="Enable Hypervisor based Inspection.")			
+            help="Enable Hypervisor based Inspection.")
     params.add_argument("--localized-internet-country", "--lia", dest="param-localized-internet-country", metavar="NAME",
             help="Country for routing internet traffic through.")
     params.add_argument("--keyboard-layout", "--keyboard", dest="param-keyboard-layout", metavar="NAME",

@@ -127,6 +127,9 @@ def test_boolean_parameters(joe, monkeypatch):
 
         # no preference
         None: None,
+
+        # no preference (bool)
+        jbxapi.UnsetBool: None,
     }
 
     for value, expected in tests.items():

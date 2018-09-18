@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.7.1"
+__version__ = "2.8.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -48,6 +48,7 @@ ACCEPT_TAC = False
 
 # default submission parameters
 # when specifying None, the server decides
+UnsetBool = object()
 submission_defaults = {
     # system selection, set to None for automatic selection
     # 'systems': ('w7', 'w7x64'),
@@ -63,44 +64,46 @@ submission_defaults = {
     # tags
     'tags': None,
     # enable internet access during analysis
-    'internet-access': None,
+    'internet-access': UnsetBool,
+    # enable internet simulation during analysis
+    'internet-simulation': UnsetBool,
     # lookup samples in the report cache
-    'report-cache': None,
+    'report-cache': UnsetBool,
     # hybrid code analysis
-    'hybrid-code-analysis': None,
+    'hybrid-code-analysis': UnsetBool,
     # hybrid decompilation
-    'hybrid-decompilation': None,
+    'hybrid-decompilation': UnsetBool,
     # inspect ssl traffic
-    'ssl-inspection': None,
+    'ssl-inspection': UnsetBool,
     # instrumentation of vba scripts
-    'vba-instrumentation': None,
+    'vba-instrumentation': UnsetBool,
     # instrumentation of javascript
-    'js-instrumentation': None,
+    'js-instrumentation': UnsetBool,
     # traces Java JAR files
-    'java-jar-tracing': None,
+    'java-jar-tracing': UnsetBool,
     # send an e-mail upon completion of the analysis
-    'email-notification': None,
+    'email-notification': UnsetBool,
     # only run static analysis. Disables the dynamic analysis.
-    'static-only': None,
+    'static-only': UnsetBool,
     # starts the Sample with normal user privileges
-    'start-as-normal-user': None,
+    'start-as-normal-user': UnsetBool,
     # tries to bypass time-aware samples which check the system date
-    'anti-evasion-date': None,
+    'anti-evasion-date': UnsetBool,
     # changes the keyboard layout of the analysis machine
     'keyboard-layout': None,
     # Do not unpack archive files (zip, 7zip etc).
-    'archive-no-unpack': None,
+    'archive-no-unpack': UnsetBool,
     # Enable Hypervisor based Inspection
-    "hypervisor-based-inspection": None,
+    "hypervisor-based-inspection": UnsetBool,
     # select hyper mode for a faster but less thorough analysis
-    'hyper-mode': None,
+    'hyper-mode': UnsetBool,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
     # export the report to Joe Sandbox View
-    'export-to-jbxview': None,
+    'export-to-jbxview': UnsetBool,
     # lookup the reputation of URLs and domains (Requires sending URLs third-party services.)
-    'url-reputation': None,
+    'url-reputation': UnsetBool,
     # Delete the analysis after X days
     'delete-after-days': None,
 
@@ -110,9 +113,9 @@ submission_defaults = {
     'priority': None,
 
     # removed parameters
-    'autosubmit-dropped': None,
-    'adaptive-internet-simulation': None,
-    'smart-filter': None,
+    'autosubmit-dropped': UnsetBool,
+    'adaptive-internet-simulation': UnsetBool,
+    'smart-filter': UnsetBool,
 }
 
 class JoeSandbox(object):
@@ -222,17 +225,17 @@ class JoeSandbox(object):
         params['tags[]'] = params.pop('tags', None)
 
         # submit booleans as "0" and "1"
-        bool_parameters = {
-            "internet-access", "report-cache", "hybrid-code-analysis", "hybrid-decompilation",
-            "adaptive-internet-simulation", "ssl-inspection", "hybrid-decompilation",
-            "vba-instrumentation", "email-notification", "smart-filter",
-            "hyper-mode", "export-to-jbxview", "js-instrumentation", "java-jar-tracing",
-            "start-as-normal-user", "anti-evasion-date", "archive-no-unpack",
-            "hypervisor-based-inspection",
-        }
         for key, value in params.items():
-            if value is not None and key in bool_parameters:
-                params[key] = "1" if value else "0"
+            try:
+                default = submission_defaults[key]
+            except KeyError:
+                continue
+
+            if default is True or default is False or default is UnsetBool:
+                if value is None or value is UnsetBool:
+                    params[key] = None
+                else:
+                    params[key] = "1" if value else "0"
 
         return params
 
@@ -655,6 +658,8 @@ def cli(argv):
             help="Analysis time in seconds.")
     add_bool_param("--internet", dest="param-internet-access",
             help="Enable Internet Access (on by default).")
+    add_bool_param("--internet-simulation", dest="param-internet-simulation",
+            help="Enable Internet Simulation. No Internet Access is granted.")
     add_bool_param("--cache", dest="param-report-cache",
             help="Check cache for a report before analyzing the sample.")
     params.add_argument("--office-pw", dest="param-office-files-password", metavar="PASSWORD",

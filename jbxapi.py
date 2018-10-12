@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.8.0"
+__version__ = "2.8.1"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -645,10 +645,20 @@ def cli(argv):
 
     params = submit_parser.add_argument_group('analysis parameters')
 
-    def add_bool_param(name, dest=None, help=""):
-        params.add_argument(name, dest=dest, action="store_true", default=None, help=help)
-        negative_name = "--no-" + name[2:]
-        params.add_argument(negative_name, dest=dest, default=None, action="store_false")
+    def add_bool_param(*names, **kwargs):
+        dest = kwargs.pop("dest", None)
+        help = kwargs.pop("help", "")
+        assert(not kwargs)
+
+        negative_names = []
+        for name in names:
+            if name.startswith("--no-"):
+                negative_names.append("-" + name[4:])
+            else:
+                negative_names.append("--no-" + name[2:])
+
+        params.add_argument(*names, dest=dest, action="store_true", default=None, help=help)
+        params.add_argument(*negative_names, dest=dest, default=None, action="store_false")
 
     params.add_argument("--comments", dest="param-comments", metavar="TEXT",
             help="Comment for the analysis.")
@@ -680,7 +690,7 @@ def cli(argv):
             help="Start sample as normal user.")
     add_bool_param("--anti-evasion-date", dest="param-anti-evasion-date",
             help="Bypass time-aware samples.")
-    add_bool_param("--archive-no-unpack", dest="param-archive-no-unpack",
+    add_bool_param("--no-unpack", "--archive-no-unpack", dest="param-archive-no-unpack",
             help="Do not unpack archive (zip, 7zip etc).")
     add_bool_param("--hypervisor-based-inspection", dest="param-hypervisor-based-inspection",
             help="Enable Hypervisor based Inspection.")

@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.8.1"
+__version__ = "2.9.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -527,12 +527,22 @@ def cli(argv):
         elif args.sample_url_mode:
             print_json(joe.submit_sample_url(args.sample, params=params, _extra_params=extra_params))
         else:
-            with open(args.sample, "rb") as f:
-                if args.cookbook is not None:
-                    with open(args.cookbook, "rb") as f_cookbook:
+            try:
+                f_cookbook = open(args.cookbook, "rb") if args.cookbook is not None else None
+
+                def _submit_file(path):
+                    with open(path, "rb") as f:
                         print_json(joe.submit_sample(f, params=params, _extra_params=extra_params, cookbook=f_cookbook))
+
+                if os.path.isdir(args.sample):
+                    for dirpath, _, filenames in os.walk(args.sample):
+                        for filename in filenames:
+                            _submit_file(os.path.join(dirpath, filename))
                 else:
-                    print_json(joe.submit_sample(f, params=params, _extra_params=extra_params))
+                    _submit_file(args.sample)
+            finally:
+                if f_cookbook is not None:
+                    f_cookbook.close()
 
     def server_online(joe, args):
         print_json(joe.server_online())

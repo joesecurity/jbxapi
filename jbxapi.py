@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.9.0"
+__version__ = "2.9.1"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -485,6 +485,7 @@ class ApiError(JoeException):
                 4: InvalidApiKeyError,
                 5: ServerOfflineError,
                 6: InternalServerError,
+                7: PermissionError,
             }
 
             try:
@@ -505,6 +506,7 @@ class InvalidParameterError(ApiError): pass
 class InvalidApiKeyError(ApiError): pass
 class ServerOfflineError(ApiError): pass
 class InternalServerError(ApiError): pass
+class PermissionError(ApiError): pass
 
 def cli(argv):
     def print_json(value, file=sys.stdout):

@@ -1,8 +1,13 @@
-![JoeSandboxCloud](img/logo.png)
+![Joe Sandbox API v2](img/logo.png)
 
 # API Wrapper
 
-The Joe Sandbox Cloud API Wrapper enables you to fully integrate [Joe Sandbox Cloud](https://www.joesecurity.org/joe-sandbox-cloud) into your malware analysis framework. Joe Sandbox Cloud is a deep malware analysis platform which detects malicious files. 
+The Joe Sandbox API Wrapper enables you to fully integrate Joe Sandbox into your malware analysis framework. Joe Sandbox is a deep malware analysis platform for analyzing malicious files.
+
+You can use this wrapper with
+
+ * [Joe Sandbox Cloud](https://www.joesecurity.org/joe-sandbox-cloud) -- our Cloud hosted instance
+ * On-premise installations of Joe Sandbox -- for even more power and privacy
 
 It is at the same time a powerful implementation of the Joe Sandbox API and also a command line tool for interacting with Joe Sandbox.
 
@@ -39,7 +44,7 @@ script:
 API_KEY = ""
 
 # Set to True if you agree to the Terms and Conditions.
-ACCEPT_TAC  = False
+ACCEPT_TAC = False
 ```
 
 # Documentation CLI
@@ -323,9 +328,7 @@ class JoeSandbox(object)
 
 # Links
 
-* [Joe Sandbox Cloud](https://www.joesecurity.org/joe-sandbox-cloud)
-
-# Author
-
-Joe Security LLC (@[joe4security](https://twitter.com/#!/joe4security) - [webpage](https://www.joesecurity.org))
+* [Joe Securiy LLC](https://www.joesecurity.org)
+* [Joe Security Blog](https://blog.joesecurity.org)
+* [Twitter @joe4security](https://twitter.com/joe4security)
 

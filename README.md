@@ -6,8 +6,8 @@ The Joe Sandbox API Wrapper enables you to fully integrate Joe Sandbox into your
 
 You can use this wrapper with
 
- * [Joe Sandbox Cloud](https://www.joesecurity.org/joe-sandbox-cloud) -- our Cloud hosted instance
- * On-premise installations of Joe Sandbox -- for even more power and privacy
+ * [Joe Sandbox Cloud](https://www.joesecurity.org/joe-sandbox-cloud) — our Cloud hosted instance
+ * [On-premise installations of Joe Sandbox](https://www.joesecurity.org/joe-security-products#on-premise) — for even more power and privacy
 
 It is at the same time a powerful implementation of the Joe Sandbox API and also a command line tool for interacting with Joe Sandbox.
 

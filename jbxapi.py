@@ -95,8 +95,10 @@ submission_defaults = {
     'archive-no-unpack': UnsetBool,
     # Enable Hypervisor based Inspection
     "hypervisor-based-inspection": UnsetBool,
-    # select hyper mode for a faster but less thorough analysis
-    'hyper-mode': UnsetBool,
+    # select fast mode for a faster but less thorough analysis
+    'fast-mode': UnsetBool,
+	# Disables secondary results such as Yara rule generation, classification via Joe Sandbox Class as well as several detail reports. Analysis will run faster with disabled secondary results.
+    'disable-secondary-results': UnsetBool,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
@@ -714,6 +716,12 @@ def cli(argv):
             help="Add tags to the analysis.")
     params.add_argument("--delete-after-days", "--delafter", type=int, dest="param-delete-after-days", metavar="DAYS",
             help="Delete analysis after X days.")
+    add_bool_param("--fast-mode", dest="param-fast-mode",
+            help="Fast Mode focusses on fast analysis and detection versus deep forensic analysis.")
+    add_bool_param("--disable-secondary-results", dest="param-disable-secondary-results",
+            help="Disables secondary results such as Yara rule generation, classification via Joe Sandbox Class as well as several detail reports. Analysis will run faster with disabled secondary results.")			
+			
+			
 
     # info <webid>
     info_parser = subparsers.add_parser('info', parents=[common_parser],

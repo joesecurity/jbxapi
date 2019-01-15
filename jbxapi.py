@@ -59,6 +59,10 @@ submission_defaults = {
     'analysis-time': None,
     # password for decrypting office files
     'office-files-password': None,
+	# This password will be used to decrypt archives (zip, 7z, rar etc.). Default password ist "1234".
+	'archive-password': None,
+	# Will start the sample with the given command-line argument. Currently only available for Windows analyzers.
+	'command-line-argument': None,
     # country for routing internet through
     'localized-internet-country': None,
     # tags
@@ -99,6 +103,8 @@ submission_defaults = {
     'fast-mode': UnsetBool,
 	# Disables secondary results such as Yara rule generation, classification via Joe Sandbox Class as well as several detail reports. Analysis will run faster with disabled secondary results.
     'disable-secondary-results': UnsetBool,
+	# APKs are not instrumented. No Java and Android APIs are traced.
+    'no-apk-instrumentation': UnsetBool,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
@@ -688,6 +694,10 @@ def cli(argv):
             help="Check cache for a report before analyzing the sample.")
     params.add_argument("--office-pw", dest="param-office-files-password", metavar="PASSWORD",
             help="Password for decrypting office files.")
+    params.add_argument("--archive-password", dest="param-archive-password", metavar="PASSWORD",
+            help="This password will be used to decrypt archives (zip, 7z, rar etc.). Default password ist '1234'.")
+    params.add_argument("--command-line-argument", dest="param-command-line-argument", metavar="TEXT",
+            help="Will start the sample with the given command-line argument. Currently only available for Windows analyzers.")
     add_bool_param("--hca", dest="param-hybrid-code-analysis",
             help="Enable hybrid code analysis (on by default).")
     add_bool_param("--dec", dest="param-hybrid-decompilation",
@@ -720,7 +730,8 @@ def cli(argv):
             help="Fast Mode focusses on fast analysis and detection versus deep forensic analysis.")
     add_bool_param("--disable-secondary-results", dest="param-disable-secondary-results",
             help="Disables secondary results such as Yara rule generation, classification via Joe Sandbox Class as well as several detail reports. Analysis will run faster with disabled secondary results.")			
-			
+    add_bool_param("--no-apk-instrumentation", dest="param-no-apk-instrumentation",
+            help="APKs are not instrumented. No Java and Android APIs are traced.")				
 			
 
     # info <webid>

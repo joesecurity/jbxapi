@@ -59,10 +59,10 @@ submission_defaults = {
     'analysis-time': None,
     # password for decrypting office files
     'office-files-password': None,
-	# This password will be used to decrypt archives (zip, 7z, rar etc.). Default password ist "1234".
-	'archive-password': None,
-	# Will start the sample with the given command-line argument. Currently only available for Windows analyzers.
-	'command-line-argument': None,
+    # This password will be used to decrypt archives (zip, 7z, rar etc.). Default password ist "1234".
+    'archive-password': None,
+    # Will start the sample with the given command-line argument. Currently only available for Windows analyzers.
+    'command-line-argument': None,
     # country for routing internet through
     'localized-internet-country': None,
     # tags
@@ -101,10 +101,10 @@ submission_defaults = {
     "hypervisor-based-inspection": UnsetBool,
     # select fast mode for a faster but less thorough analysis
     'fast-mode': UnsetBool,
-	# Disables secondary results such as Yara rule generation, classification via Joe Sandbox Class as well as several detail reports. Analysis will run faster with disabled secondary results.
-    'disable-secondary-results': UnsetBool,
-	# APKs are not instrumented. No Java and Android APIs are traced.
-    'no-apk-instrumentation': UnsetBool,
+    # Enables secondary Results such as Yara rule generation, classification via Joe Sandbox Class as well as several detail reports. Analysis will run faster if secondary results are not enabled. Default true.
+    'enable-secondary-results': UnsetBool,
+    # Perform APK DEX code instrumentation. Only applies to Android analyzer. Default true.
+    'apk-instrumentation': UnsetBool,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
@@ -728,11 +728,11 @@ def cli(argv):
             help="Delete analysis after X days.")
     add_bool_param("--fast-mode", dest="param-fast-mode",
             help="Fast Mode focusses on fast analysis and detection versus deep forensic analysis.")
-    add_bool_param("--disable-secondary-results", dest="param-disable-secondary-results",
-            help="Disables secondary results such as Yara rule generation, classification via Joe Sandbox Class as well as several detail reports. Analysis will run faster with disabled secondary results.")			
-    add_bool_param("--no-apk-instrumentation", dest="param-no-apk-instrumentation",
-            help="APKs are not instrumented. No Java and Android APIs are traced.")				
-			
+    add_bool_param("--enable-secondary-results", dest="param-enable-secondary-results",
+            help="Enables secondary results such as Yara rule generation, classification via Joe Sandbox Class as well as several detail reports. Analysis will run faster with disabled secondary results.")            
+    add_bool_param("--apk-instrumentation", dest="param-apk-instrumentation",
+            help="Perform APK DEX code instrumentation. Only applies to Android analyzer. Default on.")                
+            
 
     # info <webid>
     info_parser = subparsers.add_parser('info', parents=[common_parser],

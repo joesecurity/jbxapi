@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.9.1"
+__version__ = "2.9.4"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"

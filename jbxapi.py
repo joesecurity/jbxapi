@@ -696,7 +696,7 @@ def cli(argv):
     params.add_argument("--office-pw", dest="param-office-files-password", metavar="PASSWORD",
             help="Password for decrypting office files.")
     params.add_argument("--archive-password", dest="param-archive-password", metavar="PASSWORD",
-            help="This password will be used to decrypt archives (zip, 7z, rar etc.). Default password ist '1234'.")
+            help="This password will be used to decrypt archives (zip, 7z, rar etc.). Default password ist 'infected'.")
     params.add_argument("--command-line-argument", dest="param-command-line-argument", metavar="TEXT",
             help="Will start the sample with the given command-line argument. Currently only available for Windows analyzers.")
     add_bool_param("--hca", dest="param-hybrid-code-analysis",

@@ -106,6 +106,16 @@ def test_url_submission(joe, monkeypatch):
     assert mock.requests[0].files is None
 
 
+def test_sample_url_submission(joe, monkeypatch):
+    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+
+    response = joe.submit_sample_url("https://example.net/sample")
+    assert response == successful_submission["data"]
+    assert "sample-url" in mock.requests[0].data
+    assert mock.requests[0].files is None
+
+
 def test_cookbook_submission(joe, monkeypatch):
     mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
     monkeypatch.setattr("requests.sessions.Session.post", mock)

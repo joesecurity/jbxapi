@@ -24,6 +24,7 @@ import argparse
 import time
 import itertools
 import random
+import errno
 
 try:
     import requests
@@ -31,7 +32,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.9.5"
+__version__ = "2.10.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -581,30 +582,27 @@ def cli(argv):
             raise JoeException("Invalid response. Is the API url correct?")
 
     def download(joe, args):
-        directory_created = False
-        paths = {}
         if args.dir is None:
             args.dir = args.webid
-            # try to create directory, raises an error if it already exists
-            os.mkdir(args.dir)
-            directory_created = True
-
-        try:
-            for type in args.types:
-                (filename, data) = joe.download(args.webid, type=type, run=args.run)
-                path = os.path.join(args.dir, filename)
-                paths[type] = os.path.abspath(path)
-                try:
-                    with open(path, "wb") as f:
-                        f.write(data)
-                except Exception as e:
-                    # delete incomplete data in case of an exception
-                    os.remove(path)
+            try:
+                os.mkdir(args.dir)
+            except Exception as e:
+                # ignore if it already exists
+                if e.errno != errno.EEXIST:
                     raise
-        except Exception as e:
-            if directory_created:
-                shutil.rmtree(args.dir)
-            raise
+
+        paths = {}
+        for type in args.types:
+            (filename, data) = joe.download(args.webid, type=type, run=args.run)
+            path = os.path.join(args.dir, filename)
+            paths[type] = os.path.abspath(path)
+            try:
+                with open(path, "wb") as f:
+                    f.write(data)
+            except Exception as e:
+                # delete incomplete data in case of an exception
+                os.remove(path)
+                raise
 
         print_json(paths)
 
@@ -769,8 +767,8 @@ def cli(argv):
     download_parser.add_argument('--run', type=int,
             help="Select the run. Obmitting this option lets Joe Sandbox choose a run.")
     download_parser.add_argument('types', nargs='*', default=['html'],
-            help="Resource types to download. "
-                 "Defaults to 'html'")
+            help="Resource types to download. Consult the help for all types. "
+                 "(default 'html')")
     download_parser.set_defaults(func=download)
 
     # search <term>

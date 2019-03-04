@@ -107,8 +107,8 @@ submission_defaults = {
     'secondary-results': UnsetBool,
     # Perform APK DEX code instrumentation. Only applies to Android analyzer. Default true.
     'apk-instrumentation': UnsetBool,
-	# Perform AMSI unpacking. Only applies to Windows. Default true
-	'amsi-unpacking': UnsetBool,
+    # Perform AMSI unpacking. Only applies to Windows. Default true
+    'amsi-unpacking': UnsetBool,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 

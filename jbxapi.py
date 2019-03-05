@@ -107,6 +107,8 @@ submission_defaults = {
     'secondary-results': UnsetBool,
     # Perform APK DEX code instrumentation. Only applies to Android analyzer. Default true.
     'apk-instrumentation': UnsetBool,
+    # Perform AMSI unpacking. Only applies to Windows. Default true
+    'amsi-unpacking': UnsetBool,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
@@ -732,6 +734,8 @@ def cli(argv):
                  "Analysis will run faster with disabled secondary results.")
     add_bool_param("--apk-instrumentation", dest="param-apk-instrumentation",
             help="Perform APK DEX code instrumentation. Only applies to Android analyzer. Default on.")
+    add_bool_param("--amsi-unpacking", dest="param-amsi-unpacking",
+            help="Perform AMSI unpacking. Only applies to Windows analyzer. Default on.")			
 
     # info <webid>
     info_parser = subparsers.add_parser('info', parents=[common_parser],

@@ -38,11 +38,11 @@ class MockedResponse(object):
         return self
 
 
-successful_submission = {"data": {"webids": ["1", "2"]}}
+successful_submission = {"data": {"webid": "1"}}
 
 
 def test_file_submission(joe, monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     sample = io.BytesIO(b"Testdata")
@@ -52,24 +52,24 @@ def test_file_submission(joe, monkeypatch):
 
 
 def test_file_submission_cookbook(joe, monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     sample = io.BytesIO(b"Testdata")
     cookbook = io.BytesIO(b"Testdata")
     response = joe.submit_sample(sample, cookbook)
-    assert response == {"webids": ["1", "2"]}
+    assert response == successful_submission["data"]
     assert "cookbook" in mock.requests[0].files
     assert "sample" in mock.requests[0].files
 
 
 def test_file_submission_tuple(joe, monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     sample = io.BytesIO(b"Testdata")
     response = joe.submit_sample(("Filename", sample))
-    assert response == {"webids": ["1", "2"]}
+    assert response == successful_submission["data"]
     assert mock.requests[0].files["sample"] == ("Filename", sample)
 
 
@@ -80,7 +80,7 @@ def test_strange_file_names(joe, monkeypatch):
         "|": "x7c",
     }
 
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     for i, (name, expected) in enumerate(names.items()):
@@ -97,7 +97,7 @@ def test_strange_file_names(joe, monkeypatch):
 
 
 def test_url_submission(joe, monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     response = joe.submit_url("https://example.net")
@@ -107,7 +107,7 @@ def test_url_submission(joe, monkeypatch):
 
 
 def test_sample_url_submission(joe, monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     response = joe.submit_sample_url("https://example.net/sample")
@@ -117,7 +117,7 @@ def test_sample_url_submission(joe, monkeypatch):
 
 
 def test_cookbook_submission(joe, monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     cookbook = io.BytesIO(b"Testdata")
@@ -145,7 +145,7 @@ def test_boolean_parameters(joe, monkeypatch):
     }
 
     for value, expected in tests.items():
-        mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+        mock = MockedResponse(ok=True, json=successful_submission)
         monkeypatch.setattr("requests.sessions.Session.post", mock)
 
         joe.submit_url("https://example.net", params={"internet-access": value})
@@ -153,7 +153,7 @@ def test_boolean_parameters(joe, monkeypatch):
 
 
 def test_array_parameters(joe, monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     joe.submit_url("https://example.net", params={"systems": ["w7"], "tags": ["mytag"]})
@@ -166,7 +166,7 @@ def test_array_parameters(joe, monkeypatch):
 
 
 def test_array_parameters_single_value(joe, monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     joe.submit_url("https://example.net", params={"systems": "w7", "tags": "mytag"})
@@ -180,7 +180,7 @@ def test_array_parameters_single_value(joe, monkeypatch):
 
 # CLI tests
 def test_cli_submit_file(monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     with tempfile.NamedTemporaryFile(delete=False) as temp:
@@ -195,7 +195,7 @@ def test_cli_submit_file(monkeypatch):
 
 
 def test_cli_submit_dir(monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     sample_dir = tempfile.mkdtemp()
@@ -215,7 +215,7 @@ def test_cli_submit_dir(monkeypatch):
 
 
 def test_cli_submit_url(monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     jbxapi.cli(["submit", "--url", "https://example.net"])
@@ -224,7 +224,7 @@ def test_cli_submit_url(monkeypatch):
 
 
 def test_cli_submit_sample_url(monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     jbxapi.cli(["submit", "--sample-url", "https://example.net/sample"])
@@ -233,7 +233,7 @@ def test_cli_submit_sample_url(monkeypatch):
 
 
 def test_cli_submit_sample_with_cookbook(monkeypatch):
-    mock = MockedResponse(ok=True, json={"data": {"webids": ["1", "2"]}})
+    mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     with tempfile.NamedTemporaryFile(delete=False) as temp1:
@@ -253,7 +253,7 @@ def test_cli_common_params_position(monkeypatch):
     monkeypatch.setattr("requests.sessions.Session.post", mock)
 
     # command at the start
-    jbxapi.cli(["list", "--apikey", "1234", "--apiurl", "http://example.net", "--accept-tac"])
+    jbxapi.cli(["analysis", "list", "--apikey", "1234", "--apiurl", "http://example.net", "--accept-tac"])
 
     # command at the end
-    jbxapi.cli(["--apikey", "1234", "--apiurl", "http://example.net", "--accept-tac", "list"])
+    jbxapi.cli(["--apikey", "1234", "--apiurl", "http://example.net", "--accept-tac", "analysis", "list"])

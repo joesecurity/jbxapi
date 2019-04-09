@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "2.10.1"
+__version__ = "3.0.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -93,8 +93,8 @@ submission_defaults = {
     'start-as-normal-user': UnsetBool,
     # tries to bypass time-aware samples which check the system date
     'anti-evasion-date': UnsetBool,
-    # changes the keyboard layout of the analysis machine
-    'keyboard-layout': None,
+    # changes the locale, location, and keyboard layout of the analysis machine
+    'language-and-locale': None,
     # Do not unpack archive files (zip, 7zip etc).
     'archive-no-unpack': UnsetBool,
     # Enable Hypervisor based Inspection
@@ -108,6 +108,10 @@ submission_defaults = {
     'apk-instrumentation': UnsetBool,
     # Perform AMSI unpacking. Only applies to Windows. Default true
     'amsi-unpacking': UnsetBool,
+    # Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. Default false
+    'remote-assistance': UnsetBool,
+    # Use view-only remote assistance. Only applies to Windows. Visible only through the web UI. Default false
+    'remote-assistance-view-only': UnsetBool,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
@@ -122,11 +126,6 @@ submission_defaults = {
 
     # priority of submissions
     'priority': None,
-
-    # removed parameters
-    'autosubmit-dropped': UnsetBool,
-    'adaptive-internet-simulation': UnsetBool,
-    'smart-filter': UnsetBool,
 }
 
 class JoeSandbox(object):
@@ -154,8 +153,9 @@ class JoeSandbox(object):
         self.session = requests.Session()
         self.session.verify = verify_ssl
         self.session.proxies = proxies
+        self.session.headers.update({"User-Agent": "jbxapi.py {}".format(__version__)})
 
-    def list(self):
+    def analysis_list(self):
         """
         Fetch a list of all analyses.
         """
@@ -165,7 +165,7 @@ class JoeSandbox(object):
 
     def submit_sample(self, sample, cookbook=None, params={}, _extra_params={}):
         """
-        Submit a sample and returns the associated webids for the samples.
+        Submit a sample and returns the submission id.
 
         Parameters:
           sample:       The sample to submit. Needs to be a file-like object or a tuple in
@@ -256,7 +256,23 @@ class JoeSandbox(object):
         data = self._prepare_params_for_submission(data)
         data.update(_extra_params)
 
-        response = self._post(self.apiurl + '/v2/analysis/submit', data=data, files=files)
+        response = self._post(self.apiurl + '/v2/submission/new', data=data, files=files)
+
+        return self._raise_or_extract(response)
+
+    def submission_info(self, submission_id):
+        """
+        Returns information about a submission including all the analysis ids.
+        """
+        response = self._post(self.apiurl + '/v2/submission/info', data={'apikey': self.apikey, 'submission_id': submission_id})
+
+        return self._raise_or_extract(response)
+
+    def submission_delete(self, submission_id):
+        """
+        Delete a submission.
+        """
+        response = self._post(self.apiurl + '/v2/submission/delete', data={'apikey': self.apikey, 'submission_id': submission_id})
 
         return self._raise_or_extract(response)
 
@@ -268,7 +284,7 @@ class JoeSandbox(object):
 
         return self._raise_or_extract(response)
 
-    def info(self, webid):
+    def analysis_info(self, webid):
         """
         Show the status and most important attributes of an analysis.
         """
@@ -276,7 +292,7 @@ class JoeSandbox(object):
 
         return self._raise_or_extract(response)
 
-    def delete(self, webid):
+    def analysis_delete(self, webid):
         """
         Delete an analysis.
         """
@@ -284,7 +300,7 @@ class JoeSandbox(object):
 
         return self._raise_or_extract(response)
 
-    def download(self, webid, type, run=None, file=None):
+    def analysis_download(self, webid, type, run=None, file=None):
         """
         Download a resource for an analysis. E.g. the full report, binaries, screenshots.
         The full list of resources can be found in our API documentation.
@@ -301,12 +317,12 @@ class JoeSandbox(object):
 
         Example:
 
-            json_report, name = joe.download(123456, 'jsonfixed')
+            json_report, name = joe.analysis_download(123456, 'jsonfixed')
 
         Example:
 
             with open("full_report.html", "wb") as f:
-                name = joe.download(123456, "html", file=f)
+                name = joe.analysis_download(123456, "html", file=f)
         """
 
         # when no file is specified, we create our own
@@ -346,7 +362,7 @@ class JoeSandbox(object):
         else:
             return filename
 
-    def search(self, query):
+    def analysis_search(self, query):
         """
         Lists the webids of the analyses that match the given query.
 
@@ -356,7 +372,7 @@ class JoeSandbox(object):
 
         return self._raise_or_extract(response)
 
-    def systems(self):
+    def server_systems(self):
         """
         Retrieve a list of available systems.
         """
@@ -390,11 +406,11 @@ class JoeSandbox(object):
 
         return self._raise_or_extract(response)
 
-    def server_keyboard_layouts(self):
+    def server_languages_and_locales(self):
         """
-        Show the available keyboard layouts
+        Show the available languages and locales
         """
-        response = self._post(self.apiurl + "/v2/server/keyboard_layouts", data={'apikey': self.apikey})
+        response = self._post(self.apiurl + "/v2/server/languages_and_locales", data={'apikey': self.apikey})
 
         return self._raise_or_extract(response)
 
@@ -523,8 +539,8 @@ def cli(argv):
     def print_json(value, file=sys.stdout):
         print(json.dumps(value, indent=4, sort_keys=True), file=file)
 
-    def list(joe, args):
-        print_json(joe.list())
+    def analysis_list(joe, args):
+        print_json(joe.analysis_list())
 
     def submit(joe, args):
         params = {name[6:]: value for name, value in vars(args).items()
@@ -557,14 +573,20 @@ def cli(argv):
                 if f_cookbook is not None:
                     f_cookbook.close()
 
+    def submission_info(joe, args):
+        print_json(joe.submission_info(args.submission_id))
+
+    def submission_delete(joe, args):
+        print_json(joe.submission_delete(args.submission_id))
+
     def server_online(joe, args):
         print_json(joe.server_online())
 
-    def info(joe, args):
-        print_json(joe.info(args.webid))
+    def analysis_info(joe, args):
+        print_json(joe.analysis_info(args.webid))
 
-    def delete(joe, args):
-        print_json(joe.delete(args.webid))
+    def analysis_delete(joe, args):
+        print_json(joe.analysis_delete(args.webid))
 
     def server_info(joe, args):
         print_json(joe.server_info())
@@ -572,17 +594,17 @@ def cli(argv):
     def server_lia_countries(joe, args):
         print_json(joe.server_lia_countries())
 
-    def server_keyboard_layouts(joe, args):
-        print_json(joe.server_keyboard_layouts())
+    def server_languages_and_locales(joe, args):
+        print_json(joe.server_languages_and_locales())
 
-    def report(joe, args):
-        (_, report) = joe.download(args.webid, type="irjsonfixed", run=args.run)
+    def analysis_report(joe, args):
+        (_, report) = joe.analysis_download(args.webid, type="irjsonfixed", run=args.run)
         try:
             print_json(json.loads(report))
         except json.JSONDecodeError as e:
             raise JoeException("Invalid response. Is the API url correct?")
 
-    def download(joe, args):
+    def analysis_download(joe, args):
         if args.dir is None:
             args.dir = args.webid
             try:
@@ -594,7 +616,7 @@ def cli(argv):
 
         paths = {}
         for type in args.types:
-            (filename, data) = joe.download(args.webid, type=type, run=args.run)
+            (filename, data) = joe.analysis_download(args.webid, type=type, run=args.run)
             path = os.path.join(args.dir, filename)
             paths[type] = os.path.abspath(path)
             try:
@@ -607,11 +629,11 @@ def cli(argv):
 
         print_json(paths)
 
-    def search(joe, args):
-        print_json(joe.search(args.searchterm))
+    def analysis_search(joe, args):
+        print_json(joe.analysis_search(args.searchterm))
 
-    def systems(joe, args):
-        print_json(joe.systems())
+    def server_systems(joe, args):
+        print_json(joe.server_systems())
 
     # common arguments
     common_parser = argparse.ArgumentParser(add_help=False)
@@ -631,11 +653,6 @@ def cli(argv):
     # add subparsers
     subparsers = parser.add_subparsers(metavar="<command>", title="commands")
     subparsers.required = True
-
-    # list
-    list_parser = subparsers.add_parser('list', parents=[common_parser],
-            help="Show all submitted analyses.")
-    list_parser.set_defaults(func=list)
 
     # submit <filepath>
     submit_parser = subparsers.add_parser('submit', parents=[common_parser],
@@ -695,7 +712,7 @@ def cli(argv):
     params.add_argument("--office-pw", dest="param-office-files-password", metavar="PASSWORD",
             help="Password for decrypting office files.")
     params.add_argument("--archive-password", dest="param-archive-password", metavar="PASSWORD",
-            help="This password will be used to decrypt archives (zip, 7z, rar etc.). Default password ist 'infected'.")
+            help="This password will be used to decrypt archives (zip, 7z, rar etc.). Default password is 'infected'.")
     params.add_argument("--command-line-argument", dest="param-command-line-argument", metavar="TEXT",
             help="Will start the sample with the given command-line argument. Currently only available for Windows analyzers.")
     add_bool_param("--hca", dest="param-hybrid-code-analysis",
@@ -720,8 +737,8 @@ def cli(argv):
             help="Enable Hypervisor based Inspection.")
     params.add_argument("--localized-internet-country", "--lia", dest="param-localized-internet-country", metavar="NAME",
             help="Country for routing internet traffic through.")
-    params.add_argument("--keyboard-layout", "--keyboard", dest="param-keyboard-layout", metavar="NAME",
-            help="Keyboard layout to be set on Windows analyzer.")
+    params.add_argument("--language-and-locale", "--langloc", dest="param-language-and-locale", metavar="NAME",
+            help="Language and locale to be set on Windows analyzer.")
     params.add_argument("--tag", dest="param-tags", action="append", metavar="TAG",
             help="Add tags to the analysis.")
     params.add_argument("--delete-after-days", "--delafter", type=int, dest="param-delete-after-days", metavar="DAYS",
@@ -735,31 +752,73 @@ def cli(argv):
             help="Perform APK DEX code instrumentation. Only applies to Android analyzer. Default on.")
     add_bool_param("--amsi-unpacking", dest="param-amsi-unpacking",
             help="Perform AMSI unpacking. Only applies to Windows analyzer. Default on.")			
+    add_bool_param("--remote-assistance", dest="param-remote-assistance",
+            help="Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. Default off. If enabled, disables VBA instrumentation.")
+    add_bool_param("--remote-assistance-view-only", dest="param-remote-assistance-view-only",
+            help="Use view-only remote assistance. Only applies to Windows. Visible only through the web UI. Default off.")
 
-    # info <webid>
-    info_parser = subparsers.add_parser('info', parents=[common_parser],
-            help="Show info about an analysis.")
-    info_parser.add_argument('webid',
-            help="Webid of the analysis.")
-    info_parser.set_defaults(func=info)
+    # submission <command>
+    submission_parser = subparsers.add_parser('submission',
+            help="Manage submissions")
+    submission_subparsers = submission_parser.add_subparsers(metavar="<submission command>", title="submission commands")
+    submission_subparsers.required = True
 
-    # delete <id>
-    delete_parser = subparsers.add_parser('delete', parents=[common_parser],
+    # submission info <submission_id>
+    submission_info_parser = submission_subparsers.add_parser('info', parents=[common_parser],
+            help="Show info about a submission.")
+    submission_info_parser.add_argument('submission_id',
+            help="Id of the submission.")
+    submission_info_parser.set_defaults(func=submission_info)
+
+    # submission delete <submission_id>
+    submission_delete_parser = submission_subparsers.add_parser('delete', parents=[common_parser],
+            help="Delete a submission.")
+    submission_delete_parser.add_argument('submission_id',
+            help="Id of the submission.")
+    submission_delete_parser.set_defaults(func=submission_delete)
+
+    # analysis <command>
+    analysis_parser = subparsers.add_parser('analysis',
+            help="Manage analyses")
+    analysis_subparsers = analysis_parser.add_subparsers(metavar="<analysis command>", title="analysis commands")
+    analysis_subparsers.required = True
+
+    # analysis info
+    analysis_info_parser = analysis_subparsers.add_parser('info', parents=[common_parser],
+            help="Show information about an analysis.")
+    analysis_info_parser.set_defaults(func=analysis_info)
+    analysis_info_parser.add_argument('webid',
+            help="Id of the analysis.")
+
+    # analysis delete
+    analysis_delete_parser = analysis_subparsers.add_parser('delete', parents=[common_parser],
             help="Delete an analysis.")
-    delete_parser.add_argument('webid',
-            help="Webid of the analysis.")
-    delete_parser.set_defaults(func=delete)
+    analysis_delete_parser.set_defaults(func=analysis_delete)
+    analysis_delete_parser.add_argument('webid',
+            help="Id of the analysis.")
 
-    # report <id>
+    # analysis list
+    analysis_list_parser = analysis_subparsers.add_parser('list', parents=[common_parser],
+            help="Show all submitted analyses.")
+    analysis_list_parser.set_defaults(func=analysis_list)
+
+    # analysis search <term>
+    analysis_search_parser = analysis_subparsers.add_parser('search', parents=[common_parser],
+            help="Search for analyses.")
+    analysis_search_parser.add_argument('searchterm',
+            help="Search term.")
+    analysis_search_parser.set_defaults(func=analysis_search)
+
+    # analysis report <id>
     report_parser = subparsers.add_parser('report', parents=[common_parser],
             help="Print the irjsonfixed report.")
     report_parser.add_argument('webid',
             help="Webid of the analysis.")
     report_parser.add_argument('--run', type=int,
             help="Select the run.")
-    report_parser.set_defaults(func=report)
+    report_parser.set_defaults(func=analysis_report)
 
-    # download <id> [resource, resource, ...]
+    # analysis download <id> [resource, resource, ...]
     download_parser = subparsers.add_parser('download', parents=[common_parser],
             help="Download a resource of an analysis.")
     download_parser.add_argument('webid',
@@ -768,23 +827,11 @@ def cli(argv):
             help="Directory to store the reports in. "
                  "Defaults to <webid> in the current working directory. (Will be created.)")
     download_parser.add_argument('--run', type=int,
-            help="Select the run. Obmitting this option lets Joe Sandbox choose a run.")
+            help="Select the run. Omitting this option lets Joe Sandbox choose a run.")
     download_parser.add_argument('types', nargs='*', default=['html'],
             help="Resource types to download. Consult the help for all types. "
                  "(default 'html')")
-    download_parser.set_defaults(func=download)
-
-    # search <term>
-    search_parser = subparsers.add_parser('search', parents=[common_parser],
-            help="Search for analysis.")
-    search_parser.add_argument('searchterm',
-            help="Search term.")
-    search_parser.set_defaults(func=search)
-
-    # systems
-    systems_parser = subparsers.add_parser('systems', parents=[common_parser],
-            help="List all available systems.")
-    systems_parser.set_defaults(func=systems)
+    download_parser.set_defaults(func=analysis_download)
 
     # server
     server_parser = subparsers.add_parser('server',
@@ -802,15 +849,20 @@ def cli(argv):
             help="Show information about the server.")
     server_info_parser.set_defaults(func=server_info)
 
+    # server systems
+    server_systems_parser = server_subparsers.add_parser('systems', parents=[common_parser],
+            help="List all available systems.")
+    server_systems_parser.set_defaults(func=server_systems)
+
     # server lia countries
     server_lia_parser = server_subparsers.add_parser('lia_countries', parents=[common_parser],
             help="Show available localized internet anonymization countries.")
     server_lia_parser.set_defaults(func=server_lia_countries)
 
-    # server keyboard layouts
-    server_keyboard_parser = server_subparsers.add_parser('keyboard_layouts', parents=[common_parser],
-            help="Show available keyboard layouts for Windows.")
-    server_keyboard_parser.set_defaults(func=server_keyboard_layouts)
+    # server languages and locales
+    server_langloc_parser = server_subparsers.add_parser('languages_and_locales', parents=[common_parser],
+            help="Show available languages and locales for Windows.")
+    server_langloc_parser.set_defaults(func=server_languages_and_locales)
 
     # Parse common args first, this allows
     # i.e. jbxapi.py --apikey 1234 list
@@ -830,25 +882,25 @@ def cli(argv):
     try:
         args.func(joe, args)
     except ApiError as e:
-        print_json(e.raw, file=sys.stderr)
+        print_json(e.raw)
         sys.exit(e.code + 100) # api errors start from 100
     except ConnectionError as e:
         print_json({
             "code": 1,
             "message": str(e),
-        }, file=sys.stderr)
+        })
         sys.exit(3)
     except (OSError, IOError) as e:
         print_json({
             "code": 1,
             "message": str(e),
-        }, file=sys.stderr)
+        })
         sys.exit(4)
     except JoeException as e:
         print_json({
             "code": 1,
             "message": str(e),
-        }, file=sys.stderr)
+        })
         sys.exit(5)
 
 

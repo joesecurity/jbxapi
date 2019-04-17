@@ -28,7 +28,7 @@ The code is written in Python and licensed under MIT.
 
     pip install jbxapi
 
-:warning: On-premise installations with Joe Sandbox v24 or older should use the following version:
+:warning: On-premise installations with Joe Sandbox v25 or older should use the following version:
 
     pip install jbxapi==2.10.1
 

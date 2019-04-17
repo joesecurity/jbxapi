@@ -2,7 +2,7 @@
 
 # API Wrapper
 
-:warning: There have been some breaking changes in v3.0.0, please see [CHANGES.md][CHANGES.md].
+:warning: There have been some breaking changes in v3.0.0, please see [CHANGES.md](CHANGES.md).
 
 The Joe Sandbox API Wrapper enables you to fully integrate Joe Sandbox into your malware analysis framework. Joe Sandbox is a deep malware analysis platform for analyzing malicious files.
 

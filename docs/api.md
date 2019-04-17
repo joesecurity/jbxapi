@@ -1,5 +1,3 @@
-![Joe Sandbox API v2](../img/logo.png)
-
 # Documentation Module
 
 ## Exception Hierarchy

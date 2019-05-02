@@ -32,6 +32,10 @@ The code is written in Python and licensed under MIT.
 
     pip install jbxapi==2.10.1
 
+For upgrading `jbxapi` to a more recent version, use
+
+    pip install --upgrade jbxapi
+
 ## Manually
 
 1. Install [python-requests](http://docs.python-requests.org/en/latest/)

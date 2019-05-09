@@ -1,3 +1,7 @@
+# Version 3.0.1
+
+* Add `JoeSandbox.analysis_list_paged()`. Use this new method for iterating over large numbers of analyses.
+
 # Version 3.0.0
 
 ## Breaking Change

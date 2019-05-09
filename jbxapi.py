@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.0.0"
+__version__ = "3.0.1"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -158,10 +158,34 @@ class JoeSandbox(object):
     def analysis_list(self):
         """
         Fetch a list of all analyses.
-        """
-        response = self._post(self.apiurl + '/v2/analysis/list', data={'apikey': self.apikey})
 
-        return self._raise_or_extract(response)
+        Consider using `analysis_list_paged` instead.
+        """
+        return list(self.analysis_list_paged())
+
+    def analysis_list_paged(self):
+        """
+        Fetch all analyses. Returns an iterator.
+
+        The returned iterator can throw an exception anytime `next()` is called on it.
+        """
+
+        pagination_next = None
+        while True:
+            response = self._post(self.apiurl + '/v2/analysis/list', data={
+                "apikey": self.apikey,
+                "pagination": "1",
+                "pagination_next": pagination_next,
+            })
+
+            data = self._raise_or_extract(response)
+            for item in data:
+                yield item
+
+            try:
+                pagination_next = response.json()["pagination"]["next"]
+            except KeyError:
+                break
 
     def submit_sample(self, sample, cookbook=None, params={}, _extra_params={}):
         """

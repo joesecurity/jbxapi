@@ -30,8 +30,6 @@ commands:
     submit      Submit a sample to Joe Sandbox.
     submission  Manage submissions
     analysis    Manage analyses
-    report      Print the irjsonfixed report.
-    download    Download a resource of an analysis.
     server      Query server info
 ```
 

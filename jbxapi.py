@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.0.1"
+__version__ = "3.0.2"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -834,7 +834,7 @@ def cli(argv):
     analysis_search_parser.set_defaults(func=analysis_search)
 
     # analysis report <id>
-    report_parser = subparsers.add_parser('report', parents=[common_parser],
+    report_parser = analysis_subparsers.add_parser('report', parents=[common_parser],
             help="Print the irjsonfixed report.")
     report_parser.add_argument('webid',
             help="Webid of the analysis.")
@@ -843,7 +843,7 @@ def cli(argv):
     report_parser.set_defaults(func=analysis_report)
 
     # analysis download <id> [resource, resource, ...]
-    download_parser = subparsers.add_parser('download', parents=[common_parser],
+    download_parser = analysis_subparsers.add_parser('download', parents=[common_parser],
             help="Download a resource of an analysis.")
     download_parser.add_argument('webid',
             help="Webid of the analysis.")

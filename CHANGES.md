@@ -1,3 +1,7 @@
+# Version 3.0.2
+
+Fix the command line for `analysis report` and `analysis download`.
+
 # Version 3.0.1
 
 * Add `JoeSandbox.analysis_list_paged()`. Use this new method for iterating over large numbers of analyses.

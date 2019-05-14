@@ -44,8 +44,8 @@ Changes to the Command Line Interface:
 | `jbxapi delete`                  | `jbxapi analysis delete`                           |
 | `jbxapi list`                    | `jbxapi analysis list`                             |
 | `jbxapi search`                  | `jbxapi analysis search`                           |
-| `jbxapi download`                | `jbxapi analysis list`                             |
-| `jbxapi report`                  | `jbxapi analysis search`                           |
+| `jbxapi download`                | `jbxapi analysis download`                         |
+| `jbxapi report`                  | `jbxapi analysis report`                           |
 | `jbxapi systems`                 | `jbxapi server systems`                            |
 | new                              | `jbxapi submission info`                           |
 | new                              | `jbxapi submission delete`                         |

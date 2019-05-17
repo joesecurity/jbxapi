@@ -27,7 +27,7 @@ setup(name='jbxapi',
       py_modules=['jbxapi'],
       install_requires=[
           'requests>=2.22.0,<3',
-          'urllib>=1.25.2',  # needed for non-ascii filename support
+          'urllib3>=1.25.2',  # needed for non-ascii filename support
       ],
       entry_points={
           'console_scripts': [

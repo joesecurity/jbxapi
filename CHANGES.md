@@ -1,3 +1,10 @@
+# Version 3.1
+
+Update dependencies to requests 2.22.0 and urllib 1.25.2.
+This allows uploading files with non-ascii names. Closes issue #10.
+
+Python 3.4 is no longer supported.
+
 # Version 3.0.2
 
 Fix the command line for `analysis report` and `analysis download`.

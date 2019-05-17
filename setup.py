@@ -26,7 +26,8 @@ setup(name='jbxapi',
       license='MIT',
       py_modules=['jbxapi'],
       install_requires=[
-          'requests>=2.18.4,<3',
+          'requests>=2.22.0,<3',
+          'urllib>=1.25.2',  # needed for non-ascii filename support
       ],
       entry_points={
           'console_scripts': [
@@ -46,5 +47,7 @@ setup(name='jbxapi',
           'Programming Language :: Python :: 2',
           'Programming Language :: Python :: 2.7',
           'Programming Language :: Python :: 3',
-          'Programming Language :: Python :: 3.4',
+          'Programming Language :: Python :: 3.5',
+          'Programming Language :: Python :: 3.6',
+          'Programming Language :: Python :: 3.7',
       ])

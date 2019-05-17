@@ -20,7 +20,7 @@ The code is written in Python and licensed under MIT.
 # Requirements
 
 * Python 2.7 or higher
-* Python 3.4 or higher
+* Python 3.5 or higher
 
 # Installation
 

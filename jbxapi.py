@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.0.2"
+__version__ = "3.1.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -445,33 +445,9 @@ class JoeSandbox(object):
             (a) always inserts a timeout
             (b) converts errors to ConnectionError
             (c) re-tries a few times
-            (d) converts file names to ASCII
         """
 
-        # Remove non-ASCII characters from filenames due to a limitation of the combination of
-        # urllib3 (via python-requests) and our server
-        # https://github.com/requests/requests/issues/2117
-        # Internal Ticket #3090
-        if "files" in kwargs and kwargs["files"] is not None:
-            acceptable_chars = "0123456789" + "abcdefghijklmnopqrstuvwxyz" + \
-                               "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + " _-.,()[]{}"
-            for param_name, fp in kwargs["files"].items():
-                if isinstance(fp, (tuple, list)):
-                    filename, fp = fp
-                else:
-                    filename = requests.utils.guess_filename(fp) or param_name
-
-                def encode(char):
-                    try:
-                        if char in acceptable_chars:
-                            return char
-                    except UnicodeDecodeError:
-                        pass
-                    return "x{:02x}".format(ord(char))
-                filename = "".join(encode(x) for x in filename)
-
-                kwargs["files"][param_name] = (filename, fp)
-
+        # try the request a few times
         for i in itertools.count(1):
             try:
                 return self.session.post(url, data=data, timeout=self.timeout, **kwargs)

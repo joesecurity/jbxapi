@@ -1,3 +1,7 @@
+# Version 3.1.3
+
+Add compatibility with urllib3 < 1.25.2 to avoid dependency issues.
+
 # Version 3.1.2
 
 The constructor of `JoeSandbox` gains a new argument `user_agent`. When you develop an integration

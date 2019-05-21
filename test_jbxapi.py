@@ -73,6 +73,31 @@ def test_file_submission_tuple(joe, monkeypatch):
     assert mock.requests[0].files["sample"] == ("Filename", sample)
 
 
+def test_strange_file_names(joe, monkeypatch):
+    names = {
+        "Sample": "Sample",
+        "\xc3\xb6": "xc3xb6",
+        "|": "x7c",
+    }
+
+    mock = MockedResponse(ok=True, json=successful_submission)
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+    # only necessary for urllib3 < 1.25.2
+    monkeypatch.setattr("urllib3.__version__", "1.25.1")
+
+    for i, (name, expected) in enumerate(names.items()):
+        s = io.BytesIO(b"Testdata")
+        s.name = name
+        joe.submit_sample(s, cookbook=s)
+        assert mock.requests[i * 2].files["sample"] == (expected, s)
+        assert mock.requests[i * 2].files["cookbook"] == (expected, s)
+
+        s = io.BytesIO(b"Testdata")
+        joe.submit_sample((name, s), cookbook=(name, s))
+        assert mock.requests[i * 2 + 1].files["sample"] == (expected, s)
+        assert mock.requests[i * 2 + 1].files["cookbook"] == (expected, s)
+
+
 def test_url_submission(joe, monkeypatch):
     mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)

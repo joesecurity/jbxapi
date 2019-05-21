@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.1.2"
+__version__ = "3.1.3"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -456,6 +456,9 @@ class JoeSandbox(object):
             (b) converts errors to ConnectionError
             (c) re-tries a few times
         """
+
+        # convert file names to ASCII for old urllib versionsif necessary
+        _urllib3_fix_filenames(kwargs)
 
         # try the request a few times
         for i in itertools.count(1):
@@ -948,6 +951,48 @@ def main(argv=None):
         sys.argv = win32_unicode_argv()
 
     cli(argv if argv is not None else sys.argv[1:])
+
+
+def _urllib3_fix_filenames(kwargs):
+    """
+    Remove non-ASCII characters from file names due to a limitation of the combination of
+    urllib3 (via python-requests) and our server
+    https://github.com/requests/requests/issues/2117
+    Internal Ticket #3090
+    """
+
+    import urllib3
+
+    # fixed in urllib3 1.25.2
+    # https://github.com/urllib3/urllib3/pull/1492
+    try:
+        urllib_version = [int(p) for p in urllib3.__version__.split(".")]
+    except Exception:
+        print("Error parsing urllib version: " + urllib.__version__, file=sys.stderr)
+        return
+
+    if urllib_version >= [1, 25, 2]:
+        return
+
+    if "files" in kwargs and kwargs["files"] is not None:
+        acceptable_chars = "0123456789" + "abcdefghijklmnopqrstuvwxyz" + \
+                           "ABCDEFGHIJKLMNOPQRSTUVWXYZ" + " _-.,()[]{}"
+        for param_name, fp in kwargs["files"].items():
+            if isinstance(fp, (tuple, list)):
+                filename, fp = fp
+            else:
+                filename = requests.utils.guess_filename(fp) or param_name
+
+            def encode(char):
+                try:
+                    if char in acceptable_chars:
+                        return char
+                except UnicodeDecodeError:
+                    pass
+                return "x{:02x}".format(ord(char))
+            filename = "".join(encode(x) for x in filename)
+
+            kwargs["files"][param_name] = (filename, fp)
 
 
 if __name__ == "__main__":

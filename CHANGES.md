@@ -1,3 +1,12 @@
+# Version 3.1.2
+
+The constructor of `JoeSandbox` gains a new argument `user_agent`. When you develop an integration
+with Joe Sandbox, please specify the name of the integration.
+
+# Version 3.1.1
+
+Small fix.
+
 # Version 3.1
 
 Update dependencies to requests 2.22.0 and urllib 1.25.2.

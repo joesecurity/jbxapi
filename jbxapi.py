@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.1.1"
+__version__ = "3.1.2"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -129,7 +129,9 @@ submission_defaults = {
 }
 
 class JoeSandbox(object):
-    def __init__(self, apikey=API_KEY, apiurl=API_URL, accept_tac=ACCEPT_TAC, timeout=None, verify_ssl=True, retries=3, proxies=None):
+    def __init__(self, apikey=API_KEY, apiurl=API_URL, accept_tac=ACCEPT_TAC,
+                       timeout=None, verify_ssl=True, retries=3,
+                       proxies=None, user_agent=None):
         """
         Create a JoeSandbox object.
 
@@ -143,17 +145,25 @@ class JoeSandbox(object):
           retries:    Number of times requests should be retried if they timeout.
           proxies:    Proxy settings, see the requests library for more information:
                       http://docs.python-requests.org/en/master/user/advanced/#proxies
+          user_agent: The user agent. Use this when you write an integration with Joe Sandbox
+                      so that it is possible to track how often an integration is being used.
         """
+
         self.apikey = apikey
         self.apiurl = apiurl.rstrip("/")
         self.accept_tac = accept_tac
         self.timeout = timeout
         self.retries = retries
 
+        if user_agent:
+            user_agent += " (jbxapi.py {})".format(__version__)
+        else:
+            user_agent = "jbxapi.py {}".format(__version__)
+
         self.session = requests.Session()
         self.session.verify = verify_ssl
         self.session.proxies = proxies
-        self.session.headers.update({"User-Agent": "jbxapi.py {}".format(__version__)})
+        self.session.headers.update({"User-Agent": user_agent})
 
     def analysis_list(self):
         """
@@ -203,7 +213,7 @@ class JoeSandbox(object):
 
             import jbxapi
 
-            joe = jbxapi.JoeSandbox()
+            joe = jbxapi.JoeSandbox(user_agent="My Integration")
             with open("sample.exe", "rb") as f:
                 joe.submit_sample(f, params={"systems": ["w7"]})
 
@@ -211,7 +221,7 @@ class JoeSandbox(object):
 
             import io, jbxapi
 
-            joe = jbxapi.JoeSandbox()
+            joe = jbxapi.JoeSandbox(user_agent="My Integration")
 
             cookbook = io.BytesIO(b"cookbook content")
             with open("sample.exe", "rb") as f:
@@ -878,7 +888,7 @@ def cli(argv):
     vars(args).update(vars(common_args))
 
     # run command
-    joe = JoeSandbox(apikey=args.apikey, apiurl=args.apiurl, accept_tac=args.accept_tac)
+    joe = JoeSandbox(apikey=args.apikey, apiurl=args.apiurl, accept_tac=args.accept_tac, user_agent="CLI")
     try:
         args.func(joe, args)
     except ApiError as e:

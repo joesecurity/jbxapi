@@ -1,3 +1,7 @@
+# Version 3.2
+
+Add --ingore-errors flag to the "analysis download" command.
+
 # Version 3.1.3
 
 Add compatibility with urllib3 < 1.25.2 to avoid dependency issues.

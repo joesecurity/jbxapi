@@ -31,7 +31,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.1.3"
+__version__ = "3.2.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -628,8 +628,19 @@ def cli(argv):
                     raise
 
         paths = {}
+        errors = []
         for type in args.types:
-            (filename, data) = joe.analysis_download(args.webid, type=type, run=args.run)
+            try:
+                (filename, data) = joe.analysis_download(args.webid, type=type, run=args.run)
+            except ApiError as e:
+                if not args.ignore_errors:
+                    raise
+
+                print(e.message, file=sys.stderr)
+                paths[type] = None
+                errors.append(e)
+                continue
+
             path = os.path.join(args.dir, filename)
             paths[type] = os.path.abspath(path)
             try:
@@ -639,6 +650,9 @@ def cli(argv):
                 # delete incomplete data in case of an exception
                 os.remove(path)
                 raise
+
+        if errors and all(p is None for p in paths.values()):
+            raise errors[0]
 
         print_json(paths)
 
@@ -833,7 +847,7 @@ def cli(argv):
 
     # analysis download <id> [resource, resource, ...]
     download_parser = analysis_subparsers.add_parser('download', parents=[common_parser],
-            help="Download a resource of an analysis.")
+            help="Download resources of an analysis.")
     download_parser.add_argument('webid',
             help="Webid of the analysis.")
     download_parser.add_argument('--dir',
@@ -841,6 +855,9 @@ def cli(argv):
                  "Defaults to <webid> in the current working directory. (Will be created.)")
     download_parser.add_argument('--run', type=int,
             help="Select the run. Omitting this option lets Joe Sandbox choose a run.")
+    download_parser.add_argument('--ignore-errors', action="store_true",
+            help="Report the paths as 'null' instead of aborting on the first error."
+                 " In case no resource can be downloaded, an error is still raised.")
     download_parser.add_argument('types', nargs='*', default=['html'],
             help="Resource types to download. Consult the help for all types. "
                  "(default 'html')")

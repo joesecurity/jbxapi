@@ -53,7 +53,7 @@ Changes to Python class `JoeSandbox`:
 | `def list`                         | `def analysis_list`                                |
 | `def search`                       | `def analysis_search`                              |
 | `def download`                     | `def analysis_download`                            |
-| `def report`                       | `def analysis_search`                              |
+| `def report`                       | `def analysis_report`                              |
 | `def systems`                      | `def server_systems`                               |
 | new                                | `def submission_info`                              |
 | new                                | `def submission_delete`                            |

@@ -346,7 +346,7 @@ class JoeSandbox(object):
             webid: the webid of the analysis
             type: the report type, e.g. 'html', 'bins'
             run: specify the run. If it is None, let Joe Sandbox pick one
-            file: a writeable file-like object (When obmitted, the method returns
+            file: a writable file-like object (When omitted, the method returns
                   the data as a bytes object.)
 
         Example:

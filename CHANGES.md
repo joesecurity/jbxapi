@@ -1,6 +1,6 @@
 # Version 3.2
 
-Add --ingore-errors flag to the "analysis download" command.
+Add `--ignore-errors` flag to the "analysis download" command.
 
 # Version 3.1.3
 

@@ -495,7 +495,7 @@ class JoeSandbox(object):
             (c) re-tries a few times
         """
 
-        # convert file names to ASCII for old urllib versionsif necessary
+        # convert file names to ASCII for old urllib versions if necessary
         _urllib3_fix_filenames(kwargs)
 
         # try the request a few times
@@ -943,7 +943,7 @@ def cli(argv):
             help="Show available localized internet anonymization countries.")
     server_lia_parser.set_defaults(func=server_lia_countries)
 
-    # server languages and locales
+    # server languages_and_locales
     server_langloc_parser = server_subparsers.add_parser('languages_and_locales', parents=[common_parser],
             help="Show available languages and locales for Windows.")
     server_langloc_parser.set_defaults(func=server_languages_and_locales)
@@ -1039,7 +1039,7 @@ def _urllib3_fix_filenames(kwargs):
     try:
         urllib_version = [int(p) for p in urllib3.__version__.split(".")]
     except Exception:
-        print("Error parsing urllib version: " + urllib.__version__, file=sys.stderr)
+        print("Error parsing urllib version: " + urllib3.__version__, file=sys.stderr)
         return
 
     if urllib_version >= [1, 25, 2]:

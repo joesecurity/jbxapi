@@ -27,6 +27,8 @@ setup(name='jbxapi',
       py_modules=['jbxapi'],
       install_requires=[
           'requests>=2.18.4,<3',
+          # for decrypting zip files
+          'pyzipper>=0.3.1:python_version>="3.5"',
       ],
       entry_points={
           'console_scripts': [

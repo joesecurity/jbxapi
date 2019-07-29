@@ -1,3 +1,13 @@
+# Version 3.3
+
+Support for the new submission option `encrypt-with-password` and for downloading encrypted analyses.
+
+The decryption happens transparently.
+
+* CLI has a new option `--encrypt-with-password` for submissions.
+* CLI can specify `--password` when downloading resources
+* The API `JoeSandbox.analysis_download()` has a new argument `password`.
+
 # Version 3.2
 
 Add `--ignore-errors` flag to the "analysis download" command.

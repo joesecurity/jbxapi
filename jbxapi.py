@@ -24,6 +24,8 @@ import time
 import itertools
 import random
 import errno
+import shutil
+import tempfile
 
 try:
     import requests
@@ -31,7 +33,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.2.0"
+__version__ = "3.3.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -112,6 +114,8 @@ submission_defaults = {
     'remote-assistance': UnsetBool,
     # Use view-only remote assistance. Only applies to Windows. Visible only through the web UI. Default false
     'remote-assistance-view-only': UnsetBool,
+    # encryption password for analyses
+    'encrypt-with-password': None,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
@@ -334,7 +338,7 @@ class JoeSandbox(object):
 
         return self._raise_or_extract(response)
 
-    def analysis_download(self, webid, type, run=None, file=None):
+    def analysis_download(self, webid, type, run=None, file=None, password=None):
         """
         Download a resource for an analysis. E.g. the full report, binaries, screenshots.
         The full list of resources can be found in our API documentation.
@@ -343,11 +347,13 @@ class JoeSandbox(object):
         otherwise it's a tuple of (filename, bytes).
 
         Parameters:
-            webid: the webid of the analysis
-            type: the report type, e.g. 'html', 'bins'
-            run: specify the run. If it is None, let Joe Sandbox pick one
-            file: a writable file-like object (When omitted, the method returns
-                  the data as a bytes object.)
+            webid:    the webid of the analysis
+            type:     the report type, e.g. 'html', 'bins'
+            run:      specify the run. If it is None, let Joe Sandbox pick one
+            file:     a writable file-like object (When omitted, the method returns
+                      the data as a bytes object.)
+            password: a password for decrypting a resource (see the
+                      encrypt-with-password submission option)
 
         Example:
 
@@ -364,6 +370,11 @@ class JoeSandbox(object):
             _file = io.BytesIO()
         else:
             _file = file
+
+        # password-encrypted resources have to be stored in a temp file first
+        if password:
+            _decrypted_file = _file
+            _file = tempfile.TemporaryFile()
 
         data = {
             'apikey': self.apikey,
@@ -389,6 +400,13 @@ class JoeSandbox(object):
                 _file.write(chunk)
         except requests.exceptions.RequestException as e:
             raise ConnectionError(e)
+
+        # decrypt temporary file
+        if password:
+            _file.seek(0)
+            self._decrypt(_file, _decrypted_file, password)
+            _file.close()
+            _file = _decrypted_file
 
         # no user file means we return the content
         if file is None:
@@ -447,6 +465,26 @@ class JoeSandbox(object):
         response = self._post(self.apiurl + "/v2/server/languages_and_locales", data={'apikey': self.apikey})
 
         return self._raise_or_extract(response)
+
+    def _decrypt(self, source, target, password):
+        """
+        Decrypt encrypted files downloaded from a Joe Sandbox server.
+        """
+
+        try:
+            import pyzipper
+        except ImportError:
+            raise NotImplementedError("Decryption requires Python 3 and the pyzipper library.")
+
+        try:
+            with pyzipper.AESZipFile(source) as myzip:
+                infolist = myzip.infolist()
+                assert(len(infolist) == 1)
+
+                with myzip.open(infolist[0], pwd=password) as zipmember:
+                    shutil.copyfileobj(zipmember, target)
+        except Exception as e:
+            raise JoeException(str(e))
 
     def _post(self, url, data=None, **kwargs):
         """
@@ -549,6 +587,16 @@ class InternalServerError(ApiError): pass
 class PermissionError(ApiError): pass
 
 def cli(argv):
+    def _bytes_from_str(text):
+        """
+        Python 2/3 compatibility function to ensure that what is sent on the command line
+        is converted into bytes. In Python 2 this is a no-op.
+        """
+        if isinstance(text, bytes):
+            return text
+        else:
+            return text.encode("utf-8", errors="surrogateescape")
+
     def print_json(value, file=sys.stdout):
         print(json.dumps(value, indent=4, sort_keys=True), file=file)
 
@@ -611,7 +659,7 @@ def cli(argv):
         print_json(joe.server_languages_and_locales())
 
     def analysis_report(joe, args):
-        (_, report) = joe.analysis_download(args.webid, type="irjsonfixed", run=args.run)
+        (_, report) = joe.analysis_download(args.webid, type="irjsonfixed", run=args.run, password=args.password)
         try:
             print_json(json.loads(report))
         except json.JSONDecodeError as e:
@@ -631,7 +679,7 @@ def cli(argv):
         errors = []
         for type in args.types:
             try:
-                (filename, data) = joe.analysis_download(args.webid, type=type, run=args.run)
+                (filename, data) = joe.analysis_download(args.webid, type=type, run=args.run, password=args.password)
             except ApiError as e:
                 if not args.ignore_errors:
                     raise
@@ -783,6 +831,8 @@ def cli(argv):
             help="Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. Default off. If enabled, disables VBA instrumentation.")
     add_bool_param("--remote-assistance-view-only", dest="param-remote-assistance-view-only",
             help="Use view-only remote assistance. Only applies to Windows. Visible only through the web UI. Default off.")
+    params.add_argument("--encrypt-with-password", "--encrypt", type=_bytes_from_str, dest="param-encrypt-with-password", metavar="PASSWORD",
+            help="Encrypt the analysis data with the given password")
 
     # submission <command>
     submission_parser = subparsers.add_parser('submission',
@@ -843,6 +893,8 @@ def cli(argv):
             help="Webid of the analysis.")
     report_parser.add_argument('--run', type=int,
             help="Select the run.")
+    report_parser.add_argument('--password', type=_bytes_from_str,
+            help="Password for decrypting the report (see encrypt-with-password)")
     report_parser.set_defaults(func=analysis_report)
 
     # analysis download <id> [resource, resource, ...]
@@ -858,6 +910,8 @@ def cli(argv):
     download_parser.add_argument('--ignore-errors', action="store_true",
             help="Report the paths as 'null' instead of aborting on the first error."
                  " In case no resource can be downloaded, an error is still raised.")
+    download_parser.add_argument('--password', type=_bytes_from_str,
+            help="Password for decrypting the report (see encrypt-with-password)")
     download_parser.add_argument('types', nargs='*', default=['html'],
             help="Resource types to download. Consult the help for all types. "
                  "(default 'html')")

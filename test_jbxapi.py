@@ -1,3 +1,5 @@
+# coding=utf-8
+
 import os
 import io
 import pytest
@@ -270,3 +272,10 @@ def test_cli_common_params_position(monkeypatch):
 
     # command at the end
     jbxapi.cli(["--apikey", "1234", "--apiurl", "http://example.net", "--accept-tac", "analysis", "list"])
+
+
+def test_cli_password(monkeypatch):
+    assert jbxapi._cli_bytes_from_str("test") == b"test"
+
+    # utf-8
+    assert jbxapi._cli_bytes_from_str("ö") == b"\xc3\xb6"

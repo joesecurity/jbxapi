@@ -586,17 +586,18 @@ class ServerOfflineError(ApiError): pass
 class InternalServerError(ApiError): pass
 class PermissionError(ApiError): pass
 
-def cli(argv):
-    def _bytes_from_str(text):
-        """
-        Python 2/3 compatibility function to ensure that what is sent on the command line
-        is converted into bytes. In Python 2 this is a no-op.
-        """
-        if isinstance(text, bytes):
-            return text
-        else:
-            return text.encode("utf-8", errors="surrogateescape")
+def _cli_bytes_from_str(text):
+    """
+    Python 2/3 compatibility function to ensure that what is sent on the command line
+    is converted into bytes. In Python 2 this is a no-op.
+    """
+    if isinstance(text, bytes):
+        return text
+    else:
+        return text.encode("utf-8", errors="surrogateescape")
 
+
+def cli(argv):
     def print_json(value, file=sys.stdout):
         print(json.dumps(value, indent=4, sort_keys=True), file=file)
 
@@ -831,7 +832,7 @@ def cli(argv):
             help="Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. Default off. If enabled, disables VBA instrumentation.")
     add_bool_param("--remote-assistance-view-only", dest="param-remote-assistance-view-only",
             help="Use view-only remote assistance. Only applies to Windows. Visible only through the web UI. Default off.")
-    params.add_argument("--encrypt-with-password", "--encrypt", type=_bytes_from_str, dest="param-encrypt-with-password", metavar="PASSWORD",
+    params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str, dest="param-encrypt-with-password", metavar="PASSWORD",
             help="Encrypt the analysis data with the given password")
 
     # submission <command>
@@ -893,7 +894,7 @@ def cli(argv):
             help="Webid of the analysis.")
     report_parser.add_argument('--run', type=int,
             help="Select the run.")
-    report_parser.add_argument('--password', type=_bytes_from_str,
+    report_parser.add_argument('--password', type=_cli_bytes_from_str,
             help="Password for decrypting the report (see encrypt-with-password)")
     report_parser.set_defaults(func=analysis_report)
 
@@ -910,7 +911,7 @@ def cli(argv):
     download_parser.add_argument('--ignore-errors', action="store_true",
             help="Report the paths as 'null' instead of aborting on the first error."
                  " In case no resource can be downloaded, an error is still raised.")
-    download_parser.add_argument('--password', type=_bytes_from_str,
+    download_parser.add_argument('--password', type=_cli_bytes_from_str,
             help="Password for decrypting the report (see encrypt-with-password)")
     download_parser.add_argument('types', nargs='*', default=['html'],
             help="Resource types to download. Consult the help for all types. "

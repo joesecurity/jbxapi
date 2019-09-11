@@ -41,12 +41,12 @@ API_URL = "https://jbxcloud.joesecurity.org/api"
 # API_URL = "http://" + webserveraddress + "/joesandbox/index.php/api"
 
 # APIKEY, to generate goto user settings - API key
-API_KEY = ""
+API_KEY = os.environ.get('JBX_API_KEY','')
 
 # (for Joe Sandbox Cloud only)
 # Set to True if you agree to the Terms and Conditions.
 # https://jbxcloud.joesecurity.org/resources/termsandconditions.pdf
-ACCEPT_TAC = False
+ACCEPT_TAC = (os.environ.get('JBX_ACCEPT_TAC',"False") == "True")
 
 # default submission parameters
 # when specifying None, the server decides

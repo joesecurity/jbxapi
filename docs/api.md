@@ -60,7 +60,7 @@ class JoeSandbox(object)
         
         Example:
         
-            json_report, name = joe.analysis_download(123456, 'jsonfixed')
+            name, json_report = joe.analysis_download(123456, 'jsonfixed')
         
         Example:
         

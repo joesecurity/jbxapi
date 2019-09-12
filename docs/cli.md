@@ -2,17 +2,16 @@
 
 ## Parameters
 
-You can pass the api key to the script and agree to the Joe Sandbox Cloud terms and conditions
-by passing `--apikey <key>` and `--accept-tac` or modify the following variables inside the
-script:
+The script requires that you pass the API Key. Choose the option which works best for you
 
-```python
-# APIKEY, to generate goto user settings - API key
-API_KEY = ""
+* Pass the API url and API key on on the command line:
 
-# Set to True if you agree to the Terms and Conditions.
-ACCEPT_TAC = False
-```
+    ```bash
+    >>> jbxapi --apiurl https://joesandbox.example.net --apikey abc...xyz --accept-tac
+    ```
+
+* Use the environment variables `JBX_API_KEY`, `JBX_API_URL` and `JBX_ACCEPT_TAC=1`.
+* Modify the variables `API_KEY`, `API_URL` and `ACCEPT_TAC` inside the Python script directly.
 
 ## Built-in help
 

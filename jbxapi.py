@@ -33,7 +33,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.3.0"
+__version__ = "3.4.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -41,12 +41,12 @@ API_URL = "https://jbxcloud.joesecurity.org/api"
 # API_URL = "http://" + webserveraddress + "/joesandbox/index.php/api"
 
 # APIKEY, to generate goto user settings - API key
-API_KEY = os.environ.get('JBX_API_KEY','')
+API_KEY = ""
 
 # (for Joe Sandbox Cloud only)
 # Set to True if you agree to the Terms and Conditions.
 # https://jbxcloud.joesecurity.org/resources/termsandconditions.pdf
-ACCEPT_TAC = (os.environ.get('JBX_ACCEPT_TAC',"False") == "True")
+ACCEPT_TAC = False
 
 # default submission parameters
 # when specifying None, the server decides
@@ -133,7 +133,7 @@ submission_defaults = {
 }
 
 class JoeSandbox(object):
-    def __init__(self, apikey=API_KEY, apiurl=API_URL, accept_tac=ACCEPT_TAC,
+    def __init__(self, apikey=None, apiurl=None, accept_tac=None,
                        timeout=None, verify_ssl=True, retries=3,
                        proxies=None, user_agent=None):
         """
@@ -152,6 +152,18 @@ class JoeSandbox(object):
           user_agent: The user agent. Use this when you write an integration with Joe Sandbox
                       so that it is possible to track how often an integration is being used.
         """
+
+        if apikey is None:
+            apikey = os.environ.get("JBX_API_KEY", API_KEY)
+
+        if apiurl is None:
+            apiurl = os.environ.get("JBX_API_URL", API_URL)
+
+        if accept_tac is None:
+            if "JBX_ACCEPT_TAC" in os.environ:
+                accept_tac = os.environ.get("JBX_ACCEPT_TAC") == "1"
+            else:
+                accept_tac = ACCEPT_TAC
 
         self.apikey = apikey
         self.apiurl = apiurl.rstrip("/")
@@ -713,14 +725,14 @@ def cli(argv):
 
     # common arguments
     common_parser = argparse.ArgumentParser(add_help=False)
-    common_parser.add_argument('--apiurl', default=API_URL,
-        help="Api Url (You can also modify the API_URL variable inside the script.)")
-    common_parser.add_argument('--apikey', default=API_KEY,
-        help="Api Key (You can also modify the API_KEY variable inside the script.)")
-    common_parser.add_argument('--accept-tac', action='store_true', default=ACCEPT_TAC,
+    common_parser.add_argument('--apiurl',
+        help="Api Url (You can also set the env. variable JBX_API_URL.)")
+    common_parser.add_argument('--apikey',
+        help="Api Key (You can also set the env. variable JBX_API_KEY.)")
+    common_parser.add_argument('--accept-tac', action='store_true', default=None,
         help="(Joe Sandbox Cloud only): Accept the terms and conditions: "
         "https://jbxcloud.joesecurity.org/download/termsandconditions.pdf "
-        "(You can also modify the ACCEPT_TAC variable inside the script.)")
+        "(You can also set the env. variable ACCEPT_TAC=1.)")
     common_parser.add_argument('--version', action='store_true',
         help="Show version and exit.")
 

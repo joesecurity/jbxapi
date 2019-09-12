@@ -193,6 +193,52 @@ def test_user_agent():
     assert jbxapi.__version__ in joe.session.headers["User-Agent"]
 
 
+def test_api_key_input_methods(monkeypatch):
+    monkeypatch.setattr("jbxapi.API_KEY", "from_script")
+    joe = jbxapi.JoeSandbox()
+    assert joe.apikey == "from_script"
+
+    monkeypatch.setenv("JBX_API_KEY", "from_env")
+    joe = jbxapi.JoeSandbox()
+    assert joe.apikey == "from_env"
+
+    joe = jbxapi.JoeSandbox(apikey="from_arg")
+    assert joe.apikey == "from_arg"
+
+
+def test_api_url_input_methods(monkeypatch):
+    monkeypatch.setattr("jbxapi.API_URL", "from_script")
+    joe = jbxapi.JoeSandbox()
+    assert joe.apiurl == "from_script"
+
+    monkeypatch.setenv("JBX_API_URL", "from_env")
+    joe = jbxapi.JoeSandbox()
+    assert joe.apiurl == "from_env"
+
+    joe = jbxapi.JoeSandbox(apiurl="from_arg")
+    assert joe.apiurl == "from_arg"
+
+
+def test_accept_tac_input_methods(monkeypatch):
+    # The test alternates between True and False to test the
+    # order of precedence of the options
+
+    monkeypatch.setattr("jbxapi.ACCEPT_TAC", True)
+    joe = jbxapi.JoeSandbox()
+    assert joe.accept_tac is True
+
+    monkeypatch.setenv("JBX_ACCEPT_TAC", "0")
+    joe = jbxapi.JoeSandbox()
+    assert joe.accept_tac is False
+
+    monkeypatch.setenv("JBX_ACCEPT_TAC", "1")
+    joe = jbxapi.JoeSandbox()
+    assert joe.accept_tac is True
+
+    joe = jbxapi.JoeSandbox(accept_tac=False)
+    assert joe.accept_tac is False
+
+
 # CLI tests
 def test_cli_submit_file(monkeypatch):
     mock = MockedResponse(ok=True, json=successful_submission)
@@ -279,3 +325,60 @@ def test_cli_password(monkeypatch):
 
     # utf-8
     assert jbxapi._cli_bytes_from_str("ö") == b"\xc3\xb6"
+
+def test_cli_api_key_input_methods(monkeypatch):
+    mock = MockedResponse(ok=True, json=successful_submission)
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+
+    monkeypatch.setattr("jbxapi.API_KEY", "from_script")
+    jbxapi.cli(["submit", "--url", "https://example.net"])
+    assert mock.requests[-1].data["apikey"] == "from_script"
+
+    monkeypatch.setenv("JBX_API_KEY", "from_env")
+    jbxapi.cli(["submit", "--url", "https://example.net"])
+    assert mock.requests[-1].data["apikey"] == "from_env"
+
+    jbxapi.cli(["submit", "--url", "https://example.net", "--apikey", "from_arg"])
+    assert mock.requests[-1].data["apikey"] == "from_arg"
+
+
+def test_cli_api_url_input_methods(monkeypatch):
+    mock = MockedResponse(ok=True, json=successful_submission)
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+
+    monkeypatch.setattr("jbxapi.API_URL", "from_script")
+    jbxapi.cli(["submit", "--url", "https://example.net"])
+    assert mock.requests[-1].url.startswith("from_script")
+
+    monkeypatch.setenv("JBX_API_URL", "from_env")
+    jbxapi.cli(["submit", "--url", "https://example.net"])
+    assert mock.requests[-1].url.startswith("from_env")
+
+    jbxapi.cli(["submit", "--url", "https://example.net", "--apiurl", "from_arg"])
+    assert mock.requests[-1].url.startswith("from_arg")
+
+
+def test_cli_accept_tac_input_methods(monkeypatch):
+    mock = MockedResponse(ok=True, json=successful_submission)
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+
+    # The test alternates between True and False to test the
+    # order of precedence of the options
+
+    monkeypatch.setattr("jbxapi.ACCEPT_TAC", True)
+    jbxapi.cli(["submit", "--url", "https://example.net"])
+    assert mock.requests[-1].data["accept-tac"] == "1"
+
+    monkeypatch.setenv("JBX_ACCEPT_TAC", "0")
+    jbxapi.cli(["submit", "--url", "https://example.net"])
+    assert mock.requests[-1].data["accept-tac"] == "0"
+
+    monkeypatch.setenv("JBX_ACCEPT_TAC", "1")
+    jbxapi.cli(["submit", "--url", "https://example.net"])
+    assert mock.requests[-1].data["accept-tac"] == "1"
+
+    # disable it again
+    monkeypatch.setenv("JBX_ACCEPT_TAC", "0")
+
+    jbxapi.cli(["submit", "--url", "https://example.net", "--accept-tac"])
+    assert mock.requests[-1].data["accept-tac"] == "1"

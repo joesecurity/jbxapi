@@ -1,3 +1,19 @@
+# Version 3.4
+
+Support environmental variables for the server settings. The variables are:
+
+| variable              | description                                  |
+| --------------------- | -------------------------------------------- |
+| `JBX_API_KEY`         | Sets the api key                             |
+| `JBX_API_URL`         | Sets the api url                             |
+| `JBX_ACCEPT_TAC=1`    | Accept the terms and conditions (Cloud only) |
+
+These environmental variables work in both the API and CLI interface. The order of precedence is from least to most important:
+
+ 1. variables defined directly in the Python script
+ 2. environmental variables
+ 3. arguments passed as an argument (API) or parameter (CLI)
+
 # Version 3.3
 
 Support for the new submission option `encrypt-with-password` and for downloading encrypted analyses.

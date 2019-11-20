@@ -33,7 +33,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.4.0"
+__version__ = "3.5.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -87,6 +87,8 @@ submission_defaults = {
     'js-instrumentation': UnsetBool,
     # traces Java JAR files
     'java-jar-tracing': UnsetBool,
+	# traces .Net files
+    'dotnet-tracing': UnsetBool,
     # send an e-mail upon completion of the analysis
     'email-notification': UnsetBool,
     # only run static analysis. Disables the dynamic analysis.
@@ -815,6 +817,8 @@ def cli(argv):
             help="Enable JavaScript instrumentation (on by default).")
     add_bool_param("--java", dest="param-java-jar-tracing",
             help="Enable Java JAR tracing (on by default).")
+    add_bool_param("--net", dest="param-dotnet-tracing",
+            help="Enable .Net tracing.")
     add_bool_param("--normal-user", dest="param-start-as-normal-user",
             help="Start sample as normal user.")
     add_bool_param("--anti-evasion-date", dest="param-anti-evasion-date",

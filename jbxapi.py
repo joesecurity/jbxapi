@@ -59,8 +59,8 @@ submission_defaults = {
     'comments': None,
     # maximum analysis time
     'analysis-time': None,
-    # password for decrypting office files
-    'office-files-password': None,
+    # password for decrypting documents like MS Office and PDFs
+    'files-password': None,
     # This password will be used to decrypt archives (zip, 7z, rar etc.). Default password ist "1234".
     'archive-password': None,
     # Will start the sample with the given command-line argument. Currently only available for Windows analyzers.
@@ -799,8 +799,8 @@ def cli(argv):
             help="Enable Internet Simulation. No Internet Access is granted.")
     add_bool_param("--cache", dest="param-report-cache",
             help="Check cache for a report before analyzing the sample.")
-    params.add_argument("--office-pw", dest="param-office-files-password", metavar="PASSWORD",
-            help="Password for decrypting office files.")
+    params.add_argument("--files-password", dest="param-files-password", metavar="PASSWORD",
+            help="Password for decrypting MS Office and PDF documents.")
     params.add_argument("--archive-password", dest="param-archive-password", metavar="PASSWORD",
             help="This password will be used to decrypt archives (zip, 7z, rar etc.). Default password is 'infected'.")
     params.add_argument("--command-line-argument", dest="param-command-line-argument", metavar="TEXT",

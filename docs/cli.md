@@ -2,7 +2,7 @@
 
 ## Parameters
 
-The script requires that you pass the API Key. Choose the option which works best for you
+The script requires that you pass some parameters. Choose the option which works best for you.
 
 * Pass the API url and API key on on the command line:
 
@@ -11,7 +11,7 @@ The script requires that you pass the API Key. Choose the option which works bes
     ```
 
 * Use the environment variables `JBX_API_KEY`, `JBX_API_URL` and `JBX_ACCEPT_TAC=1`.
-* Modify the variables `API_KEY`, `API_URL` and `ACCEPT_TAC` inside the Python script directly.
+* Modify the variables `API_KEY`, `API_URL` and `ACCEPT_TAC` directly inside the Python script.
 
 ## Built-in help
 

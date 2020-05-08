@@ -61,7 +61,7 @@ submission_defaults = {
     'analysis-time': None,
     # password for decrypting office files
     'office-files-password': None,
-    # This password will be used to decrypt archives (zip, 7z, rar etc.). Default password ist "1234".
+    # This password will be used to decrypt archives (zip, 7z, rar etc.). Default password is "infected".
     'archive-password': None,
     # Will start the sample with the given command-line argument. Currently only available for Windows analyzers.
     'command-line-argument': None,
@@ -87,7 +87,7 @@ submission_defaults = {
     'js-instrumentation': UnsetBool,
     # traces Java JAR files
     'java-jar-tracing': UnsetBool,
-	# traces .Net files
+    # traces .Net files
     'dotnet-tracing': UnsetBool,
     # send an e-mail upon completion of the analysis
     'email-notification': UnsetBool,
@@ -838,17 +838,20 @@ def cli(argv):
     add_bool_param("--fast-mode", dest="param-fast-mode",
             help="Fast Mode focusses on fast analysis and detection versus deep forensic analysis.")
     add_bool_param("--secondary-results", dest="param-secondary-results",
-            help="Enables secondary results such as Yara rule generation, classification via Joe Sandbox Class as well as several detail reports. " + \
+            help="Enables secondary results such as Yara rule generation, classification via Joe Sandbox Class as "
+                 "well as several detail reports. "
                  "Analysis will run faster with disabled secondary results.")
     add_bool_param("--apk-instrumentation", dest="param-apk-instrumentation",
             help="Perform APK DEX code instrumentation. Only applies to Android analyzer. Default on.")
     add_bool_param("--amsi-unpacking", dest="param-amsi-unpacking",
-            help="Perform AMSI unpacking. Only applies to Windows analyzer. Default on.")			
+            help="Perform AMSI unpacking. Only applies to Windows analyzer. Default on.")
     add_bool_param("--remote-assistance", dest="param-remote-assistance",
-            help="Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. Default off. If enabled, disables VBA instrumentation.")
+            help="Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. "
+                 "Default off. If enabled, disables VBA instrumentation.")
     add_bool_param("--remote-assistance-view-only", dest="param-remote-assistance-view-only",
             help="Use view-only remote assistance. Only applies to Windows. Visible only through the web UI. Default off.")
-    params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str, dest="param-encrypt-with-password", metavar="PASSWORD",
+    params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str,
+            dest="param-encrypt-with-password", metavar="PASSWORD",
             help="Encrypt the analysis data with the given password")
 
     # submission <command>

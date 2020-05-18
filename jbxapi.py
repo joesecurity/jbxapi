@@ -734,16 +734,17 @@ def cli(argv):
 
     # common arguments
     common_parser = argparse.ArgumentParser(add_help=False)
-    common_parser.add_argument('--apiurl',
+    common_group = common_parser.add_argument_group("common arguments")
+    common_group.add_argument('--apiurl',
         help="Api Url (You can also set the env. variable JBX_API_URL.)")
-    common_parser.add_argument('--apikey',
+    common_group.add_argument('--apikey',
         help="Api Key (You can also set the env. variable JBX_API_KEY.)")
-    common_parser.add_argument('--accept-tac', action='store_true', default=None,
+    common_group.add_argument('--accept-tac', action='store_true', default=None,
         help="(Joe Sandbox Cloud only): Accept the terms and conditions: "
         "https://jbxcloud.joesecurity.org/download/termsandconditions.pdf "
         "(You can also set the env. variable ACCEPT_TAC=1.)")
-    common_parser.add_argument('--version', action='store_true',
-        help="Show version and exit.")
+    common_group.add_argument('--version', action='store_true',
+            help="Show version and exit.")
 
     parser = argparse.ArgumentParser(description="Joe Sandbox Web API")
 

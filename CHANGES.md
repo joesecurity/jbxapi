@@ -1,3 +1,11 @@
+# Version 3.5, 3.6, 3.7
+
+* Implementation of the Joe Lab API
+* New dotnet-tracing parameter.
+* Renamed `office-files-password` to `document-password`
+* Help message improvements
+* CLI gets new `--no-check-certificate` flag for easier integration in test environments.
+
 # Version 3.4
 
 Support environmental variables for the server settings. The variables are:

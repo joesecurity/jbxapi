@@ -743,6 +743,8 @@ def cli(argv):
         help="(Joe Sandbox Cloud only): Accept the terms and conditions: "
         "https://jbxcloud.joesecurity.org/download/termsandconditions.pdf "
         "(You can also set the env. variable ACCEPT_TAC=1.)")
+    common_group.add_argument('--no-check-certificate', action="store_true",
+        help="Do not check the server certificate.")
     common_group.add_argument('--version', action='store_true',
             help="Show version and exit.")
 
@@ -994,7 +996,11 @@ def cli(argv):
     vars(args).update(vars(common_args))
 
     # run command
-    joe = JoeSandbox(apikey=args.apikey, apiurl=args.apiurl, accept_tac=args.accept_tac, user_agent="CLI")
+    joe = JoeSandbox(apikey=args.apikey,
+                     apiurl=args.apiurl,
+                     accept_tac=args.accept_tac,
+                     user_agent="CLI",
+                     verify_ssl=args.no_check_certificate)
     try:
         args.func(joe, args)
     except ApiError as e:

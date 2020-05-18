@@ -782,9 +782,9 @@ def cli(argv):
 
     params = submit_parser.add_argument_group('analysis parameters')
 
-    def add_bool_param(*names, **kwargs):
-        dest = kwargs.pop("dest", None)
-        help = kwargs.pop("help", "")
+    def add_bool_param(parser, *names, **kwargs):
+        dest = kwargs.pop("dest")
+        help = kwargs.pop("help", None)
         assert(not kwargs)
 
         negative_names = []
@@ -794,8 +794,8 @@ def cli(argv):
             else:
                 negative_names.append("--no-" + name[2:])
 
-        params.add_argument(*names, dest=dest, action="store_true", default=None, help=help)
-        params.add_argument(*negative_names, dest=dest, default=None, action="store_false")
+        parser.add_argument(*names, dest=dest, action="store_true", default=None, help=help)
+        parser.add_argument(*negative_names, dest=dest, action="store_false", default=None)
 
     params.add_argument("--comments", dest="param-comments", metavar="TEXT",
             help="Comment for the analysis.")
@@ -803,11 +803,11 @@ def cli(argv):
             help="Select systems. Can be specified multiple times.")
     params.add_argument("--analysis-time", dest="param-analysis-time", metavar="SEC",
             help="Analysis time in seconds.")
-    add_bool_param("--internet", dest="param-internet-access",
+    add_bool_param(params, "--internet", dest="param-internet-access",
             help="Enable Internet Access (on by default).")
-    add_bool_param("--internet-simulation", dest="param-internet-simulation",
+    add_bool_param(params, "--internet-simulation", dest="param-internet-simulation",
             help="Enable Internet Simulation. No Internet Access is granted.")
-    add_bool_param("--cache", dest="param-report-cache",
+    add_bool_param(params, "--cache", dest="param-report-cache",
             help="Check cache for a report before analyzing the sample.")
     params.add_argument("--document-password", dest="param-document-password", metavar="PASSWORD",
             help="Password for decrypting documents like MS Office and PDFs")
@@ -815,27 +815,27 @@ def cli(argv):
             help="This password will be used to decrypt archives (zip, 7z, rar etc.). Default password is 'infected'.")
     params.add_argument("--command-line-argument", dest="param-command-line-argument", metavar="TEXT",
             help="Will start the sample with the given command-line argument. Currently only available for Windows analyzers.")
-    add_bool_param("--hca", dest="param-hybrid-code-analysis",
+    add_bool_param(params, "--hca", dest="param-hybrid-code-analysis",
             help="Enable hybrid code analysis (on by default).")
-    add_bool_param("--dec", dest="param-hybrid-decompilation",
+    add_bool_param(params, "--dec", dest="param-hybrid-decompilation",
             help="Enable hybrid decompilation.")
-    add_bool_param("--ssl-inspection", dest="param-ssl-inspection",
+    add_bool_param(params, "--ssl-inspection", dest="param-ssl-inspection",
             help="Inspect SSL traffic")
-    add_bool_param("--vbainstr", dest="param-vba-instrumentation",
+    add_bool_param(params, "--vbainstr", dest="param-vba-instrumentation",
             help="Enable VBA script instrumentation (on by default).")
-    add_bool_param("--jsinstr", dest="param-js-instrumentation",
+    add_bool_param(params, "--jsinstr", dest="param-js-instrumentation",
             help="Enable JavaScript instrumentation (on by default).")
-    add_bool_param("--java", dest="param-java-jar-tracing",
+    add_bool_param(params, "--java", dest="param-java-jar-tracing",
             help="Enable Java JAR tracing (on by default).")
-    add_bool_param("--net", dest="param-dotnet-tracing",
+    add_bool_param(params, "--net", dest="param-dotnet-tracing",
             help="Enable .Net tracing.")
-    add_bool_param("--normal-user", dest="param-start-as-normal-user",
+    add_bool_param(params, "--normal-user", dest="param-start-as-normal-user",
             help="Start sample as normal user.")
-    add_bool_param("--anti-evasion-date", dest="param-anti-evasion-date",
+    add_bool_param(params, "--anti-evasion-date", dest="param-anti-evasion-date",
             help="Bypass time-aware samples.")
-    add_bool_param("--no-unpack", "--archive-no-unpack", dest="param-archive-no-unpack",
+    add_bool_param(params, "--no-unpack", "--archive-no-unpack", dest="param-archive-no-unpack",
             help="Do not unpack archive (zip, 7zip etc).")
-    add_bool_param("--hypervisor-based-inspection", dest="param-hypervisor-based-inspection",
+    add_bool_param(params, "--hypervisor-based-inspection", dest="param-hypervisor-based-inspection",
             help="Enable Hypervisor based Inspection.")
     params.add_argument("--localized-internet-country", "--lia", dest="param-localized-internet-country", metavar="NAME",
             help="Country for routing internet traffic through.")
@@ -845,20 +845,20 @@ def cli(argv):
             help="Add tags to the analysis.")
     params.add_argument("--delete-after-days", "--delafter", type=int, dest="param-delete-after-days", metavar="DAYS",
             help="Delete analysis after X days.")
-    add_bool_param("--fast-mode", dest="param-fast-mode",
+    add_bool_param(params, "--fast-mode", dest="param-fast-mode",
             help="Fast Mode focusses on fast analysis and detection versus deep forensic analysis.")
-    add_bool_param("--secondary-results", dest="param-secondary-results",
+    add_bool_param(params, "--secondary-results", dest="param-secondary-results",
             help="Enables secondary results such as Yara rule generation, classification via Joe Sandbox Class as "
                  "well as several detail reports. "
                  "Analysis will run faster with disabled secondary results.")
-    add_bool_param("--apk-instrumentation", dest="param-apk-instrumentation",
+    add_bool_param(params, "--apk-instrumentation", dest="param-apk-instrumentation",
             help="Perform APK DEX code instrumentation. Only applies to Android analyzer. Default on.")
-    add_bool_param("--amsi-unpacking", dest="param-amsi-unpacking",
+    add_bool_param(params, "--amsi-unpacking", dest="param-amsi-unpacking",
             help="Perform AMSI unpacking. Only applies to Windows analyzer. Default on.")
-    add_bool_param("--remote-assistance", dest="param-remote-assistance",
+    add_bool_param(params, "--remote-assistance", dest="param-remote-assistance",
             help="Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. "
                  "Default off. If enabled, disables VBA instrumentation.")
-    add_bool_param("--remote-assistance-view-only", dest="param-remote-assistance-view-only",
+    add_bool_param(params, "--remote-assistance-view-only", dest="param-remote-assistance-view-only",
             help="Use view-only remote assistance. Only applies to Windows. Visible only through the web UI. Default off.")
     params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str,
             dest="param-encrypt-with-password", metavar="PASSWORD",

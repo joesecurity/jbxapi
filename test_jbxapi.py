@@ -239,6 +239,16 @@ def test_accept_tac_input_methods(monkeypatch):
     assert joe.accept_tac is False
 
 
+def test_renames_document_password(joe, monkeypatch):
+    mock = MockedResponse(ok=True, json=successful_submission)
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+
+    joe.submit_sample_url("https://example.net", params={"document-password": "password"})
+
+    assert mock.requests[0].data["office-files-password"] == "password"
+    assert "document-password" not in mock.requests[0].data
+
+
 # CLI tests
 def test_cli_submit_file(monkeypatch):
     mock = MockedResponse(ok=True, json=successful_submission)

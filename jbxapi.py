@@ -33,7 +33,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.5.0"
+__version__ = "3.7.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -60,8 +60,8 @@ submission_defaults = {
     # maximum analysis time
     'analysis-time': None,
     # password for decrypting documents like MS Office and PDFs
-    'office-files-password': None,
-    # This password will be used to decrypt archives (zip, 7z, rar etc.). Default password ist "1234".
+    'document-password': None,
+    # This password will be used to decrypt archives (zip, 7z, rar etc.). Default password is "infected".
     'archive-password': None,
     # Will start the sample with the given command-line argument. Currently only available for Windows analyzers.
     'command-line-argument': None,
@@ -87,7 +87,7 @@ submission_defaults = {
     'js-instrumentation': UnsetBool,
     # traces Java JAR files
     'java-jar-tracing': UnsetBool,
-	# traces .Net files
+    # traces .Net files
     'dotnet-tracing': UnsetBool,
     # send an e-mail upon completion of the analysis
     'email-notification': UnsetBool,
@@ -132,6 +132,9 @@ submission_defaults = {
 
     # priority of submissions
     'priority': None,
+
+    ## DEPRECATED PARAMETERS
+    'office-files-password': None,
 }
 
 class JoeSandbox(object):
@@ -286,6 +289,10 @@ class JoeSandbox(object):
         # rename array parameters
         params['systems[]'] = params.pop('systems', None)
         params['tags[]'] = params.pop('tags', None)
+
+        # rename aliases
+        if 'document-password' in params:
+            params['office-files-password'] = params.pop('document-password')
 
         # submit booleans as "0" and "1"
         for key, value in params.items():
@@ -477,6 +484,127 @@ class JoeSandbox(object):
         Show the available languages and locales
         """
         response = self._post(self.apiurl + "/v2/server/languages_and_locales", data={'apikey': self.apikey})
+
+        return self._raise_or_extract(response)
+
+    def joelab_machine_info(self, machine):
+        """
+        Show JoeLab Machine info.
+        """
+        response = self._post(self.apiurl + "/v2/joelab/machine/info", data={'apikey': self.apikey,
+                                                                             'machine': machine})
+
+        return self._raise_or_extract(response)
+
+    def joelab_images_list(self, machine):
+        """
+        List available images.
+        """
+        response = self._post(self.apiurl + "/v2/joelab/machine/info", data={'apikey': self.apikey,
+                                                                             'machine': machine})
+
+        return self._raise_or_extract(response)
+
+    def joelab_images_reset(self, machine, image=None):
+        """
+        Update the network settings.
+        """
+        response = self._post(self.apiurl + "/v2/joelab/machine/info", data={'apikey': self.apikey,
+                                                                             'machine': machine,
+                                                                             'accept-tac': "1" if self.accept_tac else "0",
+                                                                             'image': image})
+        return self._raise_or_extract(response)
+
+    def joelab_filesystem_upload(self, machine, file, path=None):
+        """
+        Upload a file to a Joe Lab machine.
+
+        Parameters:
+          machine       The machine id.
+          file:         The file to upload. Needs to be a file-like object or a tuple in
+                        the shape (filename, file-like object).
+        """
+
+        data = {
+            "apikey": self.apikey,
+            "accept-tac": "1" if self.accept_tac else "0",
+            "machine": machine,
+            "path": path,
+        }
+        files = {'file': file}
+
+        response = self._post(self.apiurl + '/v2/joelab/filesystem/upload', data=data, files=files)
+
+        return self._raise_or_extract(response)
+
+    def joelab_filesystem_download(self, machine, path, file):
+        """
+        Download a file from a Joe Lab machine.
+
+        When `file` is given, the return value is the filename specified by the server,
+        otherwise it's a tuple of (filename, bytes).
+
+        Parameters:
+            machine:  The machine id.
+            path:     The path of the file on the Joe Lab machine.
+            file:     a writable file-like object
+
+        Example:
+
+            with open("myfile.zip", "wb") as f:
+                joe.joelab_filesystem_download("w7_10", "C:\\windows32\\myfile.zip", f)
+        """
+
+        data = {'apikey': self.apikey,
+                'machine': machine,
+                'path': path}
+
+        response = self._post(self.apiurl + "/v2/joelab/filesystem/download", data=data, stream=True)
+
+        # do standard error handling when encountering an error (i.e. throw an exception)
+        if not response.ok:
+            self._raise_or_extract(response)
+            raise RuntimeError("Unreachable because statement above should raise.")
+
+        try:
+            for chunk in response.iter_content(1024):
+                file.write(chunk)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(e)
+
+    def joelab_network_info(self, machine):
+        """
+        Show Network info
+        """
+        response = self._post(self.apiurl + "/v2/joelab/network/info", data={'apikey': self.apikey,
+                                                                             'machine': machine})
+
+        return self._raise_or_extract(response)
+
+    def joelab_network_update(self, machine, settings):
+        """
+        Update the network settings.
+        """
+
+        params = dict(settings)
+
+        # convert booleans to "0" and "1"
+        if params["internet-enabled"] is not None:
+            params["internet-enabled"] = "1" if params["internet-enabled"] else "0"
+
+        params['apikey'] = self.apikey
+        params['accept-tac'] = "1" if self.accept_tac else "0"
+        params['machine'] = machine
+
+        response = self._post(self.apiurl + "/v2/joelab/network/update", data=params)
+
+        return self._raise_or_extract(response)
+
+    def joelab_list_exitpoints(self):
+        """
+        List the available internet exit points.
+        """
+        response = self._post(self.apiurl + "/v2/joelab/internet-exitpoints/list", data={'apikey': self.apikey})
 
         return self._raise_or_extract(response)
 
@@ -725,18 +853,60 @@ def cli(argv):
     def server_systems(joe, args):
         print_json(joe.server_systems())
 
+    def joelab_machine_info(joe, args):
+        print_json(joe.joelab_machine_info(args.machine))
+
+    def joelab_filesystem_upload(joe, args):
+        with open(args.file, "rb") as f:
+            print_json(joe.joelab_filesystem_upload(args.machine, f, args.path))
+
+    def joelab_filesystem_download(joe, args):
+        output_path = args.destination
+        if os.path.isdir(output_path):
+            filename = os.path.basename(args.path.replace("\\", "/"))
+            output_path = os.path.join(output_path, filename)
+
+        with open(output_path, "wb") as f:
+            joe.joelab_filesystem_download(args.machine, args.path, f)
+
+        print_json({"path": os.path.abspath(output_path)})
+
+    def joelab_images_list(joe, args):
+        print_json(joe.joelab_images_list(args.machine))
+
+    def joelab_images_reset(joe, args):
+        print_json(joe.joelab_images_reset(args.machine, args.image))
+
+    def joelab_network_info(joe, args):
+        print_json(joe.joelab_network_info(args.machine))
+
+    def joelab_network_update(joe, args):
+        print(args)
+        return
+
+        print_json(joe.joelab_network_update(args.machine, {
+            "internet-enabled": args.enable_internet,
+            "internet-exitpoint": args.internet_exitpoint,
+        }))
+
+    def joelab_exitpoints_list(joe, args):
+        print_json(joe.joelab_list_exitpoints())
+
     # common arguments
     common_parser = argparse.ArgumentParser(add_help=False)
-    common_parser.add_argument('--apiurl',
+    common_group = common_parser.add_argument_group("common arguments")
+    common_group.add_argument('--apiurl',
         help="Api Url (You can also set the env. variable JBX_API_URL.)")
-    common_parser.add_argument('--apikey',
+    common_group.add_argument('--apikey',
         help="Api Key (You can also set the env. variable JBX_API_KEY.)")
-    common_parser.add_argument('--accept-tac', action='store_true', default=None,
+    common_group.add_argument('--accept-tac', action='store_true', default=None,
         help="(Joe Sandbox Cloud only): Accept the terms and conditions: "
         "https://jbxcloud.joesecurity.org/download/termsandconditions.pdf "
         "(You can also set the env. variable ACCEPT_TAC=1.)")
-    common_parser.add_argument('--version', action='store_true',
-        help="Show version and exit.")
+    common_group.add_argument('--no-check-certificate', action="store_true",
+        help="Do not check the server certificate.")
+    common_group.add_argument('--version', action='store_true',
+            help="Show version and exit.")
 
     parser = argparse.ArgumentParser(description="Joe Sandbox Web API")
 
@@ -772,9 +942,9 @@ def cli(argv):
 
     params = submit_parser.add_argument_group('analysis parameters')
 
-    def add_bool_param(*names, **kwargs):
-        dest = kwargs.pop("dest", None)
-        help = kwargs.pop("help", "")
+    def add_bool_param(parser, *names, **kwargs):
+        dest = kwargs.pop("dest")
+        help = kwargs.pop("help", None)
         assert(not kwargs)
 
         negative_names = []
@@ -784,8 +954,8 @@ def cli(argv):
             else:
                 negative_names.append("--no-" + name[2:])
 
-        params.add_argument(*names, dest=dest, action="store_true", default=None, help=help)
-        params.add_argument(*negative_names, dest=dest, default=None, action="store_false")
+        parser.add_argument(*names, dest=dest, action="store_true", default=None, help=help)
+        parser.add_argument(*negative_names, dest=dest, action="store_false", default=None)
 
     params.add_argument("--comments", dest="param-comments", metavar="TEXT",
             help="Comment for the analysis.")
@@ -793,39 +963,39 @@ def cli(argv):
             help="Select systems. Can be specified multiple times.")
     params.add_argument("--analysis-time", dest="param-analysis-time", metavar="SEC",
             help="Analysis time in seconds.")
-    add_bool_param("--internet", dest="param-internet-access",
+    add_bool_param(params, "--internet", dest="param-internet-access",
             help="Enable Internet Access (on by default).")
-    add_bool_param("--internet-simulation", dest="param-internet-simulation",
+    add_bool_param(params, "--internet-simulation", dest="param-internet-simulation",
             help="Enable Internet Simulation. No Internet Access is granted.")
-    add_bool_param("--cache", dest="param-report-cache",
+    add_bool_param(params, "--cache", dest="param-report-cache",
             help="Check cache for a report before analyzing the sample.")
-    params.add_argument("--document-password", dest="param-office-files-password", metavar="PASSWORD",
-            help="Password for decrypting MS Office and PDF documents.")
+    params.add_argument("--document-password", dest="param-document-password", metavar="PASSWORD",
+            help="Password for decrypting documents like MS Office and PDFs")
     params.add_argument("--archive-password", dest="param-archive-password", metavar="PASSWORD",
             help="This password will be used to decrypt archives (zip, 7z, rar etc.). Default password is 'infected'.")
     params.add_argument("--command-line-argument", dest="param-command-line-argument", metavar="TEXT",
             help="Will start the sample with the given command-line argument. Currently only available for Windows analyzers.")
-    add_bool_param("--hca", dest="param-hybrid-code-analysis",
+    add_bool_param(params, "--hca", dest="param-hybrid-code-analysis",
             help="Enable hybrid code analysis (on by default).")
-    add_bool_param("--dec", dest="param-hybrid-decompilation",
+    add_bool_param(params, "--dec", dest="param-hybrid-decompilation",
             help="Enable hybrid decompilation.")
-    add_bool_param("--ssl-inspection", dest="param-ssl-inspection",
+    add_bool_param(params, "--ssl-inspection", dest="param-ssl-inspection",
             help="Inspect SSL traffic")
-    add_bool_param("--vbainstr", dest="param-vba-instrumentation",
+    add_bool_param(params, "--vbainstr", dest="param-vba-instrumentation",
             help="Enable VBA script instrumentation (on by default).")
-    add_bool_param("--jsinstr", dest="param-js-instrumentation",
+    add_bool_param(params, "--jsinstr", dest="param-js-instrumentation",
             help="Enable JavaScript instrumentation (on by default).")
-    add_bool_param("--java", dest="param-java-jar-tracing",
+    add_bool_param(params, "--java", dest="param-java-jar-tracing",
             help="Enable Java JAR tracing (on by default).")
-    add_bool_param("--net", dest="param-dotnet-tracing",
+    add_bool_param(params, "--net", dest="param-dotnet-tracing",
             help="Enable .Net tracing.")
-    add_bool_param("--normal-user", dest="param-start-as-normal-user",
+    add_bool_param(params, "--normal-user", dest="param-start-as-normal-user",
             help="Start sample as normal user.")
-    add_bool_param("--anti-evasion-date", dest="param-anti-evasion-date",
+    add_bool_param(params, "--anti-evasion-date", dest="param-anti-evasion-date",
             help="Bypass time-aware samples.")
-    add_bool_param("--no-unpack", "--archive-no-unpack", dest="param-archive-no-unpack",
+    add_bool_param(params, "--no-unpack", "--archive-no-unpack", dest="param-archive-no-unpack",
             help="Do not unpack archive (zip, 7zip etc).")
-    add_bool_param("--hypervisor-based-inspection", dest="param-hypervisor-based-inspection",
+    add_bool_param(params, "--hypervisor-based-inspection", dest="param-hypervisor-based-inspection",
             help="Enable Hypervisor based Inspection.")
     params.add_argument("--localized-internet-country", "--lia", dest="param-localized-internet-country", metavar="NAME",
             help="Country for routing internet traffic through.")
@@ -835,21 +1005,28 @@ def cli(argv):
             help="Add tags to the analysis.")
     params.add_argument("--delete-after-days", "--delafter", type=int, dest="param-delete-after-days", metavar="DAYS",
             help="Delete analysis after X days.")
-    add_bool_param("--fast-mode", dest="param-fast-mode",
+    add_bool_param(params, "--fast-mode", dest="param-fast-mode",
             help="Fast Mode focusses on fast analysis and detection versus deep forensic analysis.")
-    add_bool_param("--secondary-results", dest="param-secondary-results",
-            help="Enables secondary results such as Yara rule generation, classification via Joe Sandbox Class as well as several detail reports. " + \
+    add_bool_param(params, "--secondary-results", dest="param-secondary-results",
+            help="Enables secondary results such as Yara rule generation, classification via Joe Sandbox Class as "
+                 "well as several detail reports. "
                  "Analysis will run faster with disabled secondary results.")
-    add_bool_param("--apk-instrumentation", dest="param-apk-instrumentation",
+    add_bool_param(params, "--apk-instrumentation", dest="param-apk-instrumentation",
             help="Perform APK DEX code instrumentation. Only applies to Android analyzer. Default on.")
-    add_bool_param("--amsi-unpacking", dest="param-amsi-unpacking",
-            help="Perform AMSI unpacking. Only applies to Windows analyzer. Default on.")			
-    add_bool_param("--remote-assistance", dest="param-remote-assistance",
-            help="Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. Default off. If enabled, disables VBA instrumentation.")
-    add_bool_param("--remote-assistance-view-only", dest="param-remote-assistance-view-only",
+    add_bool_param(params, "--amsi-unpacking", dest="param-amsi-unpacking",
+            help="Perform AMSI unpacking. Only applies to Windows analyzer. Default on.")
+    add_bool_param(params, "--remote-assistance", dest="param-remote-assistance",
+            help="Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. "
+                 "Default off. If enabled, disables VBA instrumentation.")
+    add_bool_param(params, "--remote-assistance-view-only", dest="param-remote-assistance-view-only",
             help="Use view-only remote assistance. Only applies to Windows. Visible only through the web UI. Default off.")
-    params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str, dest="param-encrypt-with-password", metavar="PASSWORD",
+    params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str,
+            dest="param-encrypt-with-password", metavar="PASSWORD",
             help="Encrypt the analysis data with the given password")
+
+    # deprecated
+    params.add_argument("--office-pw", dest="param-document-password", metavar="PASSWORD",
+            help=argparse.SUPPRESS)
 
     # submission <command>
     submission_parser = subparsers.add_parser('submission',
@@ -965,6 +1142,98 @@ def cli(argv):
             help="Show available languages and locales for Windows.")
     server_langloc_parser.set_defaults(func=server_languages_and_locales)
 
+    # joelab <command>
+    joelab_parser = subparsers.add_parser('joelab',
+            help="Joe Lab Commands")
+    joelab_subparsers = joelab_parser.add_subparsers(metavar="<command>", title="joelab commands")
+    joelab_subparsers.required = True
+
+    # joelab machine <command>
+    joelab_machine_parser = joelab_subparsers.add_parser('machine',
+            help="Machine Commands")
+    joelab_machine_subparsers = joelab_machine_parser.add_subparsers(metavar="<command>", title="machine commands")
+    joelab_machine_subparsers.required = True
+
+    # joelab machine info
+    joelab_machine_info_parser = joelab_machine_subparsers.add_parser('info', parents=[common_parser],
+            help="Show machine info")
+    joelab_machine_info_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_machine_info_parser.set_defaults(func=joelab_machine_info)
+
+    # joelab filesystem <command>
+    joelab_filesystem_parser = joelab_subparsers.add_parser('filesystem',
+            help="Filesystem Commands")
+    joelab_filesystem_subparsers = joelab_filesystem_parser.add_subparsers(metavar="<command>", title="filesystem commands")
+    joelab_filesystem_subparsers.required = True
+
+    # joelab filesystem upload
+    joelab_filesystem_upload_parser = joelab_filesystem_subparsers.add_parser('upload', parents=[common_parser],
+            help="Upload a file to a Joe Lab machine")
+    joelab_filesystem_upload_parser.add_argument("--machine", required=True, help="Machine ID")
+    joelab_filesystem_upload_parser.add_argument("file", help="File to upload")
+    joelab_filesystem_upload_parser.add_argument("--path", help="Path on the Joe Lab machine")
+    joelab_filesystem_upload_parser.set_defaults(func=joelab_filesystem_upload)
+
+    # joelab filesystem download
+    joelab_filesystem_download_parser = joelab_filesystem_subparsers.add_parser('download', parents=[common_parser],
+            help="Download a file")
+    joelab_filesystem_download_parser.add_argument("--machine", required=True, help="Machine ID")
+    joelab_filesystem_download_parser.add_argument("path", help="Path of file on the Joe Lab machine")
+    joelab_filesystem_download_parser.add_argument("-d", "--destination", default=".", help="Destination", metavar="PATH")
+    joelab_filesystem_download_parser.set_defaults(func=joelab_filesystem_download)
+
+    # joelab images <command>
+    joelab_images_parser = joelab_subparsers.add_parser('images',
+            help="Images Commands")
+    joelab_images_subparsers = joelab_images_parser.add_subparsers(metavar="<command>", title="images commands")
+    joelab_images_subparsers.required = True
+
+    # joelab images list
+    joelab_images_list_parser = joelab_images_subparsers.add_parser('list', parents=[common_parser],
+            help="List the stored images.")
+    joelab_images_list_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_images_list_parser.set_defaults(func=joelab_images_list)
+
+    # joelab images reset
+    joelab_images_reset_parser = joelab_images_subparsers.add_parser('reset', parents=[common_parser],
+            help="Reset machine to an image")
+    joelab_images_reset_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_images_reset_parser.add_argument("--image", help="Image ID")
+    joelab_images_reset_parser.set_defaults(func=joelab_images_reset)
+
+    # joelab network <command>
+    joelab_network_parser = joelab_subparsers.add_parser('network',
+            help="Network Commands")
+    joelab_network_subparsers = joelab_network_parser.add_subparsers(metavar="<command>", title="network commands")
+    joelab_network_subparsers.required = True
+
+    # joelab network info
+    joelab_network_info_parser = joelab_network_subparsers.add_parser('info', parents=[common_parser],
+            help="Get network info")
+    joelab_network_info_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_network_info_parser.set_defaults(func=joelab_network_info)
+
+    # joelab network update
+    joelab_network_update_parser = joelab_network_subparsers.add_parser('update', parents=[common_parser],
+            help="Update the network settings of a Joe Lab Machine")
+    joelab_network_update_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_network_update_parser.add_argument("--enable-internet", dest="enable_internet", action="store_true", default=None,
+            help="Enable Internet")
+    joelab_network_update_parser.add_argument("--disable-internet", dest="enable_internet", action="store_false", default=None)
+    joelab_network_update_parser.add_argument("--internet-exitpoint")
+    joelab_network_update_parser.set_defaults(func=joelab_network_update)
+
+    # joelab internet-exitpoints <command>
+    joelab_exitpoints_parser = joelab_subparsers.add_parser('internet-exitpoints',
+            help="Exitpoints Commands")
+    joelab_exitpoints_subparsers = joelab_exitpoints_parser.add_subparsers(metavar="<command>", title="internet exitpoints commands")
+    joelab_exitpoints_subparsers.required = True
+
+    # joelab internet-exitpoints list
+    joelab_exitpoints_list_parser = joelab_exitpoints_subparsers.add_parser('list', parents=[common_parser],
+            help="List the available internet exitpoints")
+    joelab_exitpoints_list_parser.set_defaults(func=joelab_exitpoints_list)
+
     # Parse common args first, this allows
     # i.e. jbxapi.py --apikey 1234 list
     # and  jbxapi.py list --apikey 1234
@@ -979,7 +1248,11 @@ def cli(argv):
     vars(args).update(vars(common_args))
 
     # run command
-    joe = JoeSandbox(apikey=args.apikey, apiurl=args.apiurl, accept_tac=args.accept_tac, user_agent="CLI")
+    joe = JoeSandbox(apikey=args.apikey,
+                     apiurl=args.apiurl,
+                     accept_tac=args.accept_tac,
+                     user_agent="CLI",
+                     verify_ssl=args.no_check_certificate)
     try:
         args.func(joe, args)
     except ApiError as e:

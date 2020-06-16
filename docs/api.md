@@ -6,7 +6,7 @@ All exceptions thrown by `jbxapi.py` are subclasses of `JoeException`.
 
 <pre>
 JoeException
---> ApiError 
+--> ApiError
     --> MissingParameterError
     --> InvalidParameterError
     --> InvalidApiKeyError
@@ -21,10 +21,10 @@ JoeException
 ```python
 class JoeSandbox(object)
 
-    __init__(self, apikey='', apiurl='https://jbxcloud.joesecurity.org/api',
-                   accept_tac=False, timeout=None, verify_ssl=True, retries=3, proxies=None)
+    __init__(self, apikey=None, apiurl=None, accept_tac=None, timeout=None, verify_ssl=True, retries=3,
+	               proxies=None, user_agent=None)
         Create a JoeSandbox object.
-        
+
         Parameters:
           apikey:     the api key
           apiurl:     the api url
@@ -35,7 +35,9 @@ class JoeSandbox(object)
           retries:    Number of times requests should be retried if they timeout.
           proxies:    Proxy settings, see the requests library for more information:
                       http://docs.python-requests.org/en/master/user/advanced/#proxies
-    
+          user_agent: The user agent. Use this when you write an integration with Joe Sandbox
+                      so that it is possible to track how often an integration is being used.
+
     account_info(self)
         Only available on Joe Sandbox Cloud
         
@@ -43,8 +45,8 @@ class JoeSandbox(object)
     
     analysis_delete(self, webid)
         Delete an analysis.
-    
-    analysis_download(self, webid, type, run=None, file=None)
+
+    analysis_download(self, webid, type, run=None, file=None, password=None)
         Download a resource for an analysis. E.g. the full report, binaries, screenshots.
         The full list of resources can be found in our API documentation.
         
@@ -52,12 +54,14 @@ class JoeSandbox(object)
         otherwise it's a tuple of (filename, bytes).
         
         Parameters:
-            webid: the webid of the analysis
-            type: the report type, e.g. 'html', 'bins'
-            run: specify the run. If it is None, let Joe Sandbox pick one
-            file: a writeable file-like object (When obmitted, the method returns
-                  the data as a bytes object.)
-        
+            webid:    the webid of the analysis
+            type:     the report type, e.g. 'html', 'bins'
+            run:      specify the run. If it is None, let Joe Sandbox pick one
+            file:     a writable file-like object (When omitted, the method returns
+                      the data as a bytes object.)
+            password: a password for decrypting a resource (see the
+                      encrypt-with-password submission option)
+
         Example:
         
             name, json_report = joe.analysis_download(123456, 'jsonfixed')
@@ -72,12 +76,61 @@ class JoeSandbox(object)
     
     analysis_list(self)
         Fetch a list of all analyses.
-    
+
+        Consider using `analysis_list_paged` instead.
+
+    analysis_list_paged(self)
+        Fetch all analyses. Returns an iterator.
+
+        The returned iterator can throw an exception anytime `next()` is called on it.
+
     analysis_search(self, query)
         Lists the webids of the analyses that match the given query.
         
         Searches in MD5, SHA1, SHA256, filename, cookbook name, comment, url and report id.
-    
+
+    joelab_filesystem_download(self, machine, path, file)
+        Download a file from a Joe Lab machine.
+
+        When `file` is given, the return value is the filename specified by the server,
+        otherwise it's a tuple of (filename, bytes).
+
+        Parameters:
+            machine:  The machine id.
+            path:     The path of the file on the Joe Lab machine.
+            file:     a writable file-like object
+
+        Example:
+
+            with open("myfile.zip", "wb") as f:
+                joe.joelab_filesystem_download("w7_10", "C:\windows32\myfile.zip", f)
+
+    joelab_filesystem_upload(self, machine, file, path=None)
+        Upload a file to a Joe Lab machine.
+
+        Parameters:
+          machine       The machine id.
+          file:         The file to upload. Needs to be a file-like object or a tuple in
+                        the shape (filename, file-like object).
+
+    joelab_images_list(self, machine)
+        List available images.
+
+    joelab_images_reset(self, machine, image=None)
+        Update the network settings.
+
+    joelab_list_exitpoints(self)
+        List the available internet exit points.
+
+    joelab_machine_info(self, machine)
+        Show JoeLab Machine info.
+
+    joelab_network_info(self, machine)
+        Show Network info
+
+    joelab_network_update(self, machine, settings)
+        Update the network settings.
+
     server_info(self)
         Query information about the server.
     
@@ -112,28 +165,27 @@ class JoeSandbox(object)
                         tuple in the shape (filename, file-like object)
           params:       Customize the sandbox parameters. They are described in more detail
                         in the default submission parameters.
-        
+
         Example:
-        
+
             import jbxapi
-        
-            joe = jbxapi.JoeSandbox()
+
+            joe = jbxapi.JoeSandbox(user_agent="My Integration")
             with open("sample.exe", "rb") as f:
                 joe.submit_sample(f, params={"systems": ["w7"]})
-        
+
         Example:
-        
+
             import io, jbxapi
-        
-            joe = jbxapi.JoeSandbox()
-        
+
+            joe = jbxapi.JoeSandbox(user_agent="My Integration")
+
             cookbook = io.BytesIO(b"cookbook content")
             with open("sample.exe", "rb") as f:
                 joe.submit_sample(f, cookbook=cookbook)
-    
+
     submit_sample_url(self, url, params={}, _extra_params={})
         Submit a sample at a given URL for analysis.
-    
+
     submit_url(self, url, params={}, _extra_params={})
         Submit a website for analysis.
-```

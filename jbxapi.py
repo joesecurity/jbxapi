@@ -33,7 +33,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.7.0"
+__version__ = "3.7.1"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -1252,7 +1252,7 @@ def cli(argv):
                      apiurl=args.apiurl,
                      accept_tac=args.accept_tac,
                      user_agent="CLI",
-                     verify_ssl=args.no_check_certificate)
+                     verify_ssl=not args.no_check_certificate)
     try:
         args.func(joe, args)
     except ApiError as e:

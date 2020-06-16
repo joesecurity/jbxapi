@@ -117,7 +117,7 @@ class JoeSandbox(object)
         List available images.
 
     joelab_images_reset(self, machine, image=None)
-        Update the network settings.
+        Reset the disk image of a machine.
 
     joelab_list_exitpoints(self)
         List the available internet exit points.

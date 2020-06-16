@@ -507,7 +507,7 @@ class JoeSandbox(object):
 
     def joelab_images_reset(self, machine, image=None):
         """
-        Update the network settings.
+        Reset the disk image of a machine.
         """
         response = self._post(self.apiurl + "/v2/joelab/machine/info", data={'apikey': self.apikey,
                                                                              'machine': machine,

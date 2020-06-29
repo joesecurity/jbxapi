@@ -392,3 +392,21 @@ def test_cli_accept_tac_input_methods(monkeypatch):
 
     jbxapi.cli(["submit", "--url", "https://example.net", "--accept-tac"])
     assert mock.requests[-1].data["accept-tac"] == "1"
+
+
+def test_cli_no_check_certificate(monkeypatch):
+    response = MockedResponse(ok=True, json=successful_submission)
+
+    def request(self, *args, **kwargs):
+        # self is the session
+        response.verify_ssl = self.verify
+        return MockedResponse(ok=True, json=successful_submission)
+
+    monkeypatch.setattr("requests.sessions.Session.request", request)
+    jbxapi.cli(["submit", "--url", "https://example.net"])
+
+    assert response.verify_ssl is True
+
+    jbxapi.cli(["submit", "--url", "https://example.net", "--no-check-certificate"])
+
+    assert response.verify_ssl is False

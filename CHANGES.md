@@ -1,3 +1,8 @@
+# Version 3.7.1
+
+* In version 3.7, the CLI did not check the certificates unless `--no-check-certificate` was enabled.
+* Documentation fix for `Joe.joelab_images_reset`
+
 # Version 3.5, 3.6, 3.7
 
 * Implementation of the Joe Lab API

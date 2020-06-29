@@ -33,7 +33,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.7.0"
+__version__ = "3.7.1"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -507,7 +507,7 @@ class JoeSandbox(object):
 
     def joelab_images_reset(self, machine, image=None):
         """
-        Update the network settings.
+        Reset the disk image of a machine.
         """
         response = self._post(self.apiurl + "/v2/joelab/machine/info", data={'apikey': self.apikey,
                                                                              'machine': machine,
@@ -1252,7 +1252,7 @@ def cli(argv):
                      apiurl=args.apiurl,
                      accept_tac=args.accept_tac,
                      user_agent="CLI",
-                     verify_ssl=args.no_check_certificate)
+                     verify_ssl=not args.no_check_certificate)
     try:
         args.func(joe, args)
     except ApiError as e:

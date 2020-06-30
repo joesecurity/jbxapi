@@ -33,7 +33,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.7.1"
+__version__ = "3.8.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -792,6 +792,9 @@ def cli(argv):
     def analysis_delete(joe, args):
         print_json(joe.analysis_delete(args.webid))
 
+    def account_info(joe, args):
+        print_json(joe.account_info())
+
     def server_info(joe, args):
         print_json(joe.server_info())
 
@@ -1110,6 +1113,17 @@ def cli(argv):
             help="Resource types to download. Consult the help for all types. "
                  "(default 'html')")
     download_parser.set_defaults(func=analysis_download)
+
+    # account <command>
+    account_parser = subparsers.add_parser('account',
+            help="Query account info (Cloud Pro only)")
+    account_subparsers = account_parser.add_subparsers(metavar="<command>", title="account commands")
+    account_subparsers.required = True
+
+    # account info
+    account_info_parser = account_subparsers.add_parser('info', parents=[common_parser],
+            help="Show information about the Joe Sandbox Cloud Pro account.")
+    account_info_parser.set_defaults(func=account_info)
 
     # server
     server_parser = subparsers.add_parser('server',

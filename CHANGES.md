@@ -1,3 +1,7 @@
+# Version 3.8.0
+
+* Add `account info` command to CLI.
+
 # Version 3.7.1
 
 * In version 3.7, the CLI did not check the certificates unless `--no-check-certificate` was enabled.

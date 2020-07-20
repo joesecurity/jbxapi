@@ -919,7 +919,7 @@ def cli(argv):
 
     # submit <filepath>
     submit_parser = subparsers.add_parser('submit', parents=[common_parser],
-            usage="%(prog)s [--apiurl APIKEY] [--apikey APIKEY] [--accept-tac]\n" +
+            usage="%(prog)s [--apiurl APIURL] [--apikey APIKEY] [--accept-tac]\n" +
                   24 * " " + "[parameters ...]\n" +
                   24 * " " + "[--url | --sample-url | --cookbook COOKBOOK]\n" +
                   24 * " " + "sample",

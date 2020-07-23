@@ -541,9 +541,6 @@ class JoeSandbox(object):
         """
         Download a file from a Joe Lab machine.
 
-        When `file` is given, the return value is the filename specified by the server,
-        otherwise it's a tuple of (filename, bytes).
-
         Parameters:
             machine:  The machine id.
             path:     The path of the file on the Joe Lab machine.

@@ -33,7 +33,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.8.0"
+__version__ = "3.9.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -600,6 +600,66 @@ class JoeSandbox(object):
 
         return self._raise_or_extract(response)
 
+    def joelab_pcap_start(self, machine):
+        """
+        Start PCAP recording.
+        """
+
+        params = {
+            'apikey': self.apikey,
+            'accept-tac': "1" if self.accept_tac else "0",
+            'machine': machine,
+        }
+
+        response = self._post(self.apiurl + "/v2/joelab/pcap/start", data=params)
+
+        return self._raise_or_extract(response)
+
+    def joelab_pcap_stop(self, machine):
+        """
+        Stop PCAP recording.
+        """
+
+        params = {
+            'apikey': self.apikey,
+            'accept-tac': "1" if self.accept_tac else "0",
+            'machine': machine,
+        }
+
+        response = self._post(self.apiurl + "/v2/joelab/pcap/stop", data=params)
+
+        return self._raise_or_extract(response)
+
+    def joelab_pcap_download(self, machine, file):
+        """
+        Download the captured PCAP.
+
+        Parameters:
+            machine:  The machine id.
+            file:     a writable file-like object
+
+        Example:
+
+            with open("dump.pcap", "wb") as f:
+                joe.joelab_pcap_download("w7_10", f)
+        """
+
+        data = {'apikey': self.apikey,
+                'machine': machine}
+
+        response = self._post(self.apiurl + "/v2/joelab/pcap/download", data=data, stream=True)
+
+        # do standard error handling when encountering an error (i.e. throw an exception)
+        if not response.ok:
+            self._raise_or_extract(response)
+            raise RuntimeError("Unreachable because statement above should raise.")
+
+        try:
+            for chunk in response.iter_content(1024):
+                file.write(chunk)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(e)
+
     def joelab_list_exitpoints(self):
         """
         List the available internet exit points.
@@ -888,6 +948,23 @@ def cli(argv):
             "internet-enabled": args.enable_internet,
             "internet-exitpoint": args.internet_exitpoint,
         }))
+
+    def joelab_pcap_start(joe, args):
+        print_json(joe.joelab_pcap_start(args.machine))
+
+    def joelab_pcap_stop(joe, args):
+        print_json(joe.joelab_pcap_stop(args.machine))
+
+    def joelab_pcap_download(joe, args):
+        output_path = args.destination
+        if os.path.isdir(output_path):
+            filename = "{}.pcap".format(args.machine)
+            output_path = os.path.join(output_path, filename)
+
+        with open(output_path, "wb") as f:
+            joe.joelab_pcap_download(args.machine, f)
+
+        print_json({"path": os.path.abspath(output_path)})
 
     def joelab_exitpoints_list(joe, args):
         print_json(joe.joelab_list_exitpoints())
@@ -1233,6 +1310,31 @@ def cli(argv):
     joelab_network_update_parser.add_argument("--disable-internet", dest="enable_internet", action="store_false", default=None)
     joelab_network_update_parser.add_argument("--internet-exitpoint")
     joelab_network_update_parser.set_defaults(func=joelab_network_update)
+
+    # joelab pcap <command>
+    joelab_pcap_parser = joelab_subparsers.add_parser('pcap',
+            help="PCAP Commands")
+    joelab_pcap_subparsers = joelab_pcap_parser.add_subparsers(metavar="<command>", title="PCAP commands")
+    joelab_pcap_subparsers.required = True
+
+    # joelab pcap download
+    joelab_pcap_download_parser = joelab_pcap_subparsers.add_parser('download', parents=[common_parser],
+            help="Download the most recent PCAP")
+    joelab_pcap_download_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_pcap_download_parser.add_argument("-d", "--destination", default=".", help="Destination", metavar="PATH")
+    joelab_pcap_download_parser.set_defaults(func=joelab_pcap_download)
+
+    # joelab pcap start
+    joelab_pcap_start_parser = joelab_pcap_subparsers.add_parser('start', parents=[common_parser],
+            help="Start PCAP recodring")
+    joelab_pcap_start_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_pcap_start_parser.set_defaults(func=joelab_pcap_start)
+
+    # joelab pcap stop
+    joelab_pcap_stop_parser = joelab_pcap_subparsers.add_parser('stop', parents=[common_parser],
+            help="Stop PCAP recording")
+    joelab_pcap_stop_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_pcap_stop_parser.set_defaults(func=joelab_pcap_stop)
 
     # joelab internet-exitpoints <command>
     joelab_exitpoints_parser = joelab_subparsers.add_parser('internet-exitpoints',

@@ -1,3 +1,8 @@
+# Version 3.9.0
+
+* Fix `joelab network update` CLI command.
+* Add `joelab pcap` commands to the API and the CLI.
+
 # Version 3.8.0
 
 * Add `account info` command to CLI.

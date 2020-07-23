@@ -884,9 +884,6 @@ def cli(argv):
         print_json(joe.joelab_network_info(args.machine))
 
     def joelab_network_update(joe, args):
-        print(args)
-        return
-
         print_json(joe.joelab_network_update(args.machine, {
             "internet-enabled": args.enable_internet,
             "internet-exitpoint": args.internet_exitpoint,

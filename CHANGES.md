@@ -1,3 +1,7 @@
+# Version 3.10.0
+
+* Add `submission/list` endpoint to CLI and API.
+
 # Version 3.9.0
 
 * Fix `joelab network update` CLI command.

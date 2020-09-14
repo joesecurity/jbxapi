@@ -33,7 +33,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.9.0"
+__version__ = "3.10.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -318,6 +318,29 @@ class JoeSandbox(object):
         response = self._post(self.apiurl + '/v2/submission/new', data=data, files=files)
 
         return self._raise_or_extract(response)
+
+    def submission_list(self):
+        """
+        Fetch all submissions. Returns an iterator.
+
+        The returned iterator can throw an exception every time `next()` is called on it.
+        """
+
+        pagination_next = None
+        while True:
+            response = self._post(self.apiurl + '/v2/submission/list', data={
+                "apikey": self.apikey,
+                "pagination_next": pagination_next,
+            })
+
+            data = self._raise_or_extract(response)
+            for item in data:
+                yield item
+
+            try:
+                pagination_next = response.json()["pagination"]["next"]
+            except KeyError:
+                break
 
     def submission_info(self, submission_id):
         """
@@ -834,6 +857,9 @@ def cli(argv):
                 if f_cookbook is not None:
                     f_cookbook.close()
 
+    def submission_list(joe, args):
+        print_json(list(joe.submission_list()))
+
     def submission_info(joe, args):
         print_json(joe.submission_info(args.submission_id))
 
@@ -1107,6 +1133,11 @@ def cli(argv):
             help="Manage submissions")
     submission_subparsers = submission_parser.add_subparsers(metavar="<submission command>", title="submission commands")
     submission_subparsers.required = True
+
+    # submission list
+    submission_list_parser = submission_subparsers.add_parser('list', parents=[common_parser],
+            help="Show all submitted submissions.")
+    submission_list_parser.set_defaults(func=submission_list)
 
     # submission info <submission_id>
     submission_info_parser = submission_subparsers.add_parser('info', parents=[common_parser],

@@ -26,6 +26,7 @@ import random
 import errno
 import shutil
 import tempfile
+import math
 
 try:
     import requests
@@ -33,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.10.0"
+__version__ = "3.11.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -218,7 +219,8 @@ class JoeSandbox(object):
             except KeyError:
                 break
 
-    def submit_sample(self, sample, cookbook=None, params={}, _extra_params={}):
+    def submit_sample(self, sample, cookbook=None, params={},
+                      _extra_params={}, _chunked_upload=True):
         """
         Submit a sample and returns the submission id.
 
@@ -248,13 +250,49 @@ class JoeSandbox(object):
             with open("sample.exe", "rb") as f:
                 joe.submit_sample(f, cookbook=cookbook)
         """
+        params = copy.copy(params)
+        files = {}
+
         self._check_user_parameters(params)
 
-        files = {'sample': sample}
         if cookbook:
             files['cookbook'] = cookbook
 
-        return self._submit(params, files, _extra_params=_extra_params)
+        if isinstance(sample, (tuple, list)):
+            filename, sample = sample
+        else:  # sample is file-like object
+            filename = requests.utils.guess_filename(sample) or "sample"
+
+        try:
+            filesize = self._file_size(sample)
+        except (IOError, OSError):
+            _chunked_upload = False
+
+        if _chunked_upload:
+            orig_pos = sample.tell()
+            params["chunked-sample"] = filename
+        else:
+            files["sample"] = (filename, sample)
+
+        while True:
+            try:
+                response = self._submit(params, files, _extra_params=_extra_params)
+                break
+            except InvalidParameterError as e:
+                # re-raise if the error is not due to unsupported chunked upload
+                if not (_chunked_upload and "chunked-sample" in e.message):
+                    raise
+
+                # try again with regular upload
+                _chunked_upload = False
+                files["sample"] = (filename, sample)
+                del params["chunked-sample"]
+                sample.seek(orig_pos)
+
+        if _chunked_upload:
+            self._chunked_upload(response["submission_id"], sample, filesize)
+
+        return response
 
     def submit_sample_url(self, url, params={}, _extra_params={}):
         """
@@ -316,8 +354,60 @@ class JoeSandbox(object):
         data.update(_extra_params)
 
         response = self._post(self.apiurl + '/v2/submission/new', data=data, files=files)
-
         return self._raise_or_extract(response)
+
+    def _chunked_upload(self, submission_id, f, file_size):
+        chunk_size = 10 * 1024 * 1024
+        chunk_count = int(math.ceil(file_size / chunk_size))
+
+        metadata = {
+            "apikey": self.apikey,
+            "submission_id": submission_id,
+            "file-size": file_size,
+            "chunk-size": chunk_size,
+            "chunk-count": chunk_count,
+        }
+
+        chunk_index = 1
+        sent_size = 0
+        while sent_size < file_size:
+            # collect next chunk
+            chunk_data = io.BytesIO()
+            chunk_data_len = 0
+            while chunk_data_len < chunk_size:
+                read_data = f.read(chunk_size - chunk_data_len)
+                if read_data is None:
+                    raise ValueError("Non-blocking files are not supported.")
+
+                if len(read_data) <= 0:
+                    break
+
+                chunk_data.write(read_data)
+                chunk_data_len += len(read_data)
+
+            metadata["current-chunk-index"] = chunk_index
+            metadata["current-chunk-size"] = chunk_data_len
+            chunk_index += 1
+
+            chunk_data.seek(0)
+            response = self._post(self.apiurl + '/v2/submission/chunked-sample', data=metadata, files={"chunk": chunk_data})
+            self._raise_or_extract(response)
+
+            sent_size += chunk_data_len
+
+    def _file_size(self, f):
+        """
+        Tries to find the size of the file-like object 'f'.
+        If the file-pointer is advanced (f.tell()) it subtracts this.
+
+        Raises ValueError if it fails to do so.
+        """
+
+        pos = f.tell()
+        f.seek(0, os.SEEK_END)
+        end_pos = f.tell()
+        f.seek(pos, os.SEEK_SET)
+        return end_pos - pos
 
     def submission_list(self):
         """

@@ -1,3 +1,7 @@
+# Version 3.11.0
+
+* Improve submission code to upload large samples through chunked upload.
+
 # Version 3.10.0
 
 * Add `submission/list` endpoint to CLI and API.

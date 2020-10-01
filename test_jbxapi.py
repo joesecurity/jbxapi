@@ -1,6 +1,8 @@
 # coding=utf-8
 
 import os
+import os.path
+import copy
 import io
 import pytest
 import tempfile
@@ -35,12 +37,15 @@ class MockedResponse(object):
     def json(self):
         return self._json
 
-    def __call__(self, url, **kwargs):
-        self.requests.append(self.Request(url=url, **kwargs))
+    def __call__(self, url, data={}, files={}, **kwargs):
+        self.requests.append(self.Request(url=url,
+                                          data=copy.copy(data),
+                                          files=copy.copy(files),
+                                          **kwargs))
         return self
 
 
-successful_submission = {"data": {"webid": "1"}}
+successful_submission = {"data": {"submission_id": "1"}}
 
 
 def test_file_submission(joe, monkeypatch):
@@ -50,7 +55,8 @@ def test_file_submission(joe, monkeypatch):
     sample = io.BytesIO(b"Testdata")
     response = joe.submit_sample(sample)
     assert response == successful_submission["data"]
-    assert "sample" in mock.requests[0].files
+    assert "sample" not in mock.requests[0].files
+    assert "chunked-sample" in mock.requests[0].data
 
 
 def test_file_submission_cookbook(joe, monkeypatch):
@@ -62,7 +68,8 @@ def test_file_submission_cookbook(joe, monkeypatch):
     response = joe.submit_sample(sample, cookbook)
     assert response == successful_submission["data"]
     assert "cookbook" in mock.requests[0].files
-    assert "sample" in mock.requests[0].files
+    assert "sample" not in mock.requests[0].files
+    assert "chunked-sample" in mock.requests[0].data
 
 
 def test_file_submission_tuple(joe, monkeypatch):
@@ -72,7 +79,36 @@ def test_file_submission_tuple(joe, monkeypatch):
     sample = io.BytesIO(b"Testdata")
     response = joe.submit_sample(("Filename", sample))
     assert response == successful_submission["data"]
-    assert mock.requests[0].files["sample"] == ("Filename", sample)
+    assert mock.requests[0].data["chunked-sample"] == "Filename"
+
+
+def test_chunked_upload_fallback(joe, monkeypatch):
+    """ Fall back to non-chunked upload if the server does not
+        support it. """
+
+    error_response = {
+        "errors": [{
+            "code": 3,
+            "message": "Unknown parameter chunked-sample.",
+        }],
+    }
+
+    mock = MockedResponse(ok=False, json=error_response)
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+
+    sample = io.BytesIO(b"Test Content")
+    try:
+        joe.submit_sample(sample)
+    except jbxapi.InvalidParameterError:
+        """ This exception is expected since the fallback-request
+            also gets an error response. """
+        pass
+
+    assert "chunked-sample" in mock.requests[0].data
+    assert "sample" not in mock.requests[0].files
+
+    assert "chunked-sample" not in mock.requests[1].data
+    assert "sample" in mock.requests[1].files
 
 
 def test_strange_file_names(joe, monkeypatch):
@@ -87,17 +123,19 @@ def test_strange_file_names(joe, monkeypatch):
     # only necessary for urllib3 < 1.25.2
     monkeypatch.setattr("urllib3.__version__", "1.25.1")
 
-    for i, (name, expected) in enumerate(names.items()):
+    for name, expected in names.items():
         s = io.BytesIO(b"Testdata")
         s.name = name
-        joe.submit_sample(s, cookbook=s)
-        assert mock.requests[i * 2].files["sample"] == (expected, s)
-        assert mock.requests[i * 2].files["cookbook"] == (expected, s)
+        del mock.requests[:]
+        joe.submit_sample(s, cookbook=s, _chunked_upload=False)
+        assert mock.requests[0].files["sample"] == (expected, s)
+        assert mock.requests[0].files["cookbook"] == (expected, s)
 
+        del mock.requests[:]
         s = io.BytesIO(b"Testdata")
-        joe.submit_sample((name, s), cookbook=(name, s))
-        assert mock.requests[i * 2 + 1].files["sample"] == (expected, s)
-        assert mock.requests[i * 2 + 1].files["cookbook"] == (expected, s)
+        joe.submit_sample((name, s), cookbook=(name, s), _chunked_upload=False)
+        assert mock.requests[0].files["sample"] == (expected, s)
+        assert mock.requests[0].files["cookbook"] == (expected, s)
 
 
 def test_url_submission(joe, monkeypatch):
@@ -129,6 +167,7 @@ def test_cookbook_submission(joe, monkeypatch):
     assert response == successful_submission["data"]
     assert "cookbook" in mock.requests[0].files
     assert "sample" not in mock.requests[0].files
+    assert "chunked-sample" not in mock.requests[0].files
 
 
 def test_boolean_parameters(joe, monkeypatch):
@@ -249,6 +288,70 @@ def test_renames_document_password(joe, monkeypatch):
     assert "document-password" not in mock.requests[0].data
 
 
+def test_file_size_test(joe):
+    # file
+    with tempfile.NamedTemporaryFile() as f:
+        f.write(b'Some data')
+
+        f.seek(0)
+        assert joe._file_size(f) == 9
+
+        f.seek(4)
+        assert joe._file_size(f) == 5
+
+    # io.BytesIO
+    buf = io.BytesIO(b"Some data")
+    buf.seek(0)
+    assert joe._file_size(buf) == 9
+
+    buf.seek(4)
+    assert joe._file_size(buf) == 5
+
+
+def test_chunking(joe, monkeypatch):
+    mock = MockedResponse(ok=True, json=successful_submission)
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+
+    with tempfile.NamedTemporaryFile() as f:
+        for i in range(0, 59):
+            f.write(1024 * 1024 * b'b')  # write 1MB
+        f.seek(0)
+
+        joe.submit_sample(f)
+
+        assert len(mock.requests) == 7
+
+        # test initial request
+        assert "sample" not in mock.requests[0].data
+        assert mock.requests[0].data["chunked-sample"] == os.path.basename(f.name)
+
+        # test first chunk
+        assert mock.requests[1].data == {
+            "apikey": "",
+            "submission_id": "1",
+            "chunk-size": 10485760,
+            "file-size": 61865984,
+            "chunk-count": 6,
+            "current-chunk-index": 1,
+            "current-chunk-size": 10485760,
+        }
+        assert type(mock.requests[1].data["chunk-count"]) == int
+        assert type(mock.requests[1].data["current-chunk-size"]) == int
+
+        # test last chunk
+        assert mock.requests[6].data == {
+            "apikey": "",
+            "submission_id": "1",
+            "chunk-size": 10485760,
+            "file-size": 61865984,
+            "chunk-count": 6,
+            "current-chunk-index": 6,
+            "current-chunk-size": 9437184,
+        }
+        assert type(mock.requests[6].data["chunk-count"]) == int
+        assert type(mock.requests[6].data["current-chunk-size"]) == int
+
+
 # CLI tests
 def test_cli_submit_file(monkeypatch):
     mock = MockedResponse(ok=True, json=successful_submission)
@@ -262,7 +365,7 @@ def test_cli_submit_file(monkeypatch):
     finally:
         os.remove(temp.name)
 
-    assert "sample" in mock.requests[0].files
+    assert "chunked-sample" in mock.requests[0].data
 
 
 def test_cli_submit_dir(monkeypatch):
@@ -281,7 +384,7 @@ def test_cli_submit_dir(monkeypatch):
     finally:
         shutil.rmtree(sample_dir)
 
-    assert "sample" in mock.requests[0].files
+    assert "chunked-sample" in mock.requests[0].data
     print(mock.requests[0].files)
 
 
@@ -316,7 +419,7 @@ def test_cli_submit_sample_with_cookbook(monkeypatch):
     jbxapi.cli(["submit", "--cookbook", temp1.name, temp2.name])
 
     assert "cookbook" in mock.requests[0].files
-    assert "sample" in mock.requests[0].files
+    assert "chunked-sample" in mock.requests[0].data
 
 
 def test_cli_common_params_position(monkeypatch):

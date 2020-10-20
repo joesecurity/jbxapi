@@ -352,6 +352,18 @@ def test_chunking(joe, monkeypatch):
         assert type(mock.requests[6].data["current-chunk-size"]) == int
 
 
+def test_joelab_filesystem_upload(joe, monkeypatch):
+    mock = MockedResponse(ok=True, json=successful_submission)
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+
+    with tempfile.NamedTemporaryFile() as f:
+        for i in range(0, 59):
+            f.write(1024 * 1024 * b'b')  # write 1MB
+        f.seek(0)
+
+        joe.joelab_filesystem_upload("machine", f)
+
+
 # CLI tests
 def test_cli_submit_file(monkeypatch):
     mock = MockedResponse(ok=True, json=successful_submission)

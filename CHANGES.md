@@ -1,3 +1,7 @@
+# Version 3.12.0
+
+* Joe Lab file upload uses chunked submissions now.
+
 # Version 3.11.0
 
 * Improve submission code to upload large samples through chunked upload.

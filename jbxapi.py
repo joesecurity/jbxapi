@@ -34,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.11.0"
+__version__ = "3.12.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -258,39 +258,40 @@ class JoeSandbox(object):
         if cookbook:
             files['cookbook'] = cookbook
 
+        # extract sample name
         if isinstance(sample, (tuple, list)):
             filename, sample = sample
         else:  # sample is file-like object
             filename = requests.utils.guess_filename(sample) or "sample"
 
-        try:
-            filesize = self._file_size(sample)
-        except (IOError, OSError):
-            _chunked_upload = False
-
+        retry_with_regular_upload = False
         if _chunked_upload:
             orig_pos = sample.tell()
             params["chunked-sample"] = filename
-        else:
-            files["sample"] = (filename, sample)
 
-        while True:
             try:
                 response = self._submit(params, files, _extra_params=_extra_params)
-                break
+
+                self._chunked_upload('/v2/submission/chunked-sample', sample, {
+                    "apikey": self.apikey,
+                    "submission_id": response["submission_id"],
+                })
             except InvalidParameterError as e:
                 # re-raise if the error is not due to unsupported chunked upload
-                if not (_chunked_upload and "chunked-sample" in e.message):
+                if "chunked-sample" not in e.message:
                     raise
 
-                # try again with regular upload
-                _chunked_upload = False
-                files["sample"] = (filename, sample)
-                del params["chunked-sample"]
-                sample.seek(orig_pos)
+                retry_with_regular_upload = True
+            except _ChunkedUploadNotPossible as e:
+                retry_with_regular_upload = True
 
-        if _chunked_upload:
-            self._chunked_upload(response["submission_id"], sample, filesize)
+        if retry_with_regular_upload:
+            del params["chunked-sample"]
+            sample.seek(orig_pos)
+
+        if not _chunked_upload or retry_with_regular_upload:
+            files["sample"] = (filename, sample)
+            response = self._submit(params, files, _extra_params=_extra_params)
 
         return response
 
@@ -356,20 +357,25 @@ class JoeSandbox(object):
         response = self._post(self.apiurl + '/v2/submission/new', data=data, files=files)
         return self._raise_or_extract(response)
 
-    def _chunked_upload(self, submission_id, f, file_size):
+    def _chunked_upload(self, url, f, params):
+        try:
+            file_size = self._file_size(f)
+        except (IOError, OSError):
+            raise _ChunkedUploadNotPossible("The file does not support chunked upload.")
+
         chunk_size = 10 * 1024 * 1024
         chunk_count = int(math.ceil(file_size / chunk_size))
 
-        metadata = {
-            "apikey": self.apikey,
-            "submission_id": submission_id,
+        params = copy.copy(params)
+        params.update({
             "file-size": file_size,
             "chunk-size": chunk_size,
             "chunk-count": chunk_count,
-        }
+        })
 
         chunk_index = 1
         sent_size = 0
+        response = None
         while sent_size < file_size:
             # collect next chunk
             chunk_data = io.BytesIO()
@@ -377,7 +383,7 @@ class JoeSandbox(object):
             while chunk_data_len < chunk_size:
                 read_data = f.read(chunk_size - chunk_data_len)
                 if read_data is None:
-                    raise ValueError("Non-blocking files are not supported.")
+                    raise _ChunkedUploadNotPossible("Non-blocking files are not supported.")
 
                 if len(read_data) <= 0:
                     break
@@ -385,15 +391,17 @@ class JoeSandbox(object):
                 chunk_data.write(read_data)
                 chunk_data_len += len(read_data)
 
-            metadata["current-chunk-index"] = chunk_index
-            metadata["current-chunk-size"] = chunk_data_len
+            params["current-chunk-index"] = chunk_index
+            params["current-chunk-size"] = chunk_data_len
             chunk_index += 1
 
             chunk_data.seek(0)
-            response = self._post(self.apiurl + '/v2/submission/chunked-sample', data=metadata, files={"chunk": chunk_data})
-            self._raise_or_extract(response)
+            response = self._post(self.apiurl + '/v2/submission/chunked-sample', data=params, files={"chunk": chunk_data})
+            self._raise_or_extract(response)  # raise Exception if the response is negative
 
             sent_size += chunk_data_len
+
+        return response
 
     def _file_size(self, f):
         """
@@ -628,7 +636,7 @@ class JoeSandbox(object):
                                                                              'image': image})
         return self._raise_or_extract(response)
 
-    def joelab_filesystem_upload(self, machine, file, path=None):
+    def joelab_filesystem_upload(self, machine, file, path=None, _chunked_upload=True):
         """
         Upload a file to a Joe Lab machine.
 
@@ -644,9 +652,27 @@ class JoeSandbox(object):
             "machine": machine,
             "path": path,
         }
-        files = {'file': file}
 
-        response = self._post(self.apiurl + '/v2/joelab/filesystem/upload', data=data, files=files)
+        # extract sample name
+        if isinstance(file, (tuple, list)):
+            filename, file = file
+        else:  # sample is file-like object
+            filename = requests.utils.guess_filename(file) or "file"
+
+        retry_with_regular_upload = False
+        if _chunked_upload:
+            orig_pos = file.tell()
+            # filename
+
+            try:
+                response = self._chunked_upload('/v2/joelab/filesystem/upload-chunked', file, data)
+            except (UnknownEndpointError, _ChunkedUploadNotPossible) as e:
+                retry_with_regular_upload = True
+                file.seek(orig_pos)
+
+        if not _chunked_upload or retry_with_regular_upload:
+            files = {"file": (filename, file)}
+            response = self._post(self.apiurl + '/v2/joelab/filesystem/upload', data=data, files=files)
 
         return self._raise_or_extract(response)
 
@@ -865,6 +891,9 @@ class JoeException(Exception):
 class ConnectionError(JoeException):
     pass
 
+class _ChunkedUploadNotPossible(JoeException):
+    pass
+
 class ApiError(JoeException):
     def __new__(cls, raw):
         # select a more specific subclass if available
@@ -876,6 +905,7 @@ class ApiError(JoeException):
                 5: ServerOfflineError,
                 6: InternalServerError,
                 7: PermissionError,
+                8: UnknownEndpointError,
             }
 
             try:
@@ -897,6 +927,7 @@ class InvalidApiKeyError(ApiError): pass
 class ServerOfflineError(ApiError): pass
 class InternalServerError(ApiError): pass
 class PermissionError(ApiError): pass
+class UnknownEndpointError(ApiError): pass
 
 def _cli_bytes_from_str(text):
     """

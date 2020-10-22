@@ -1,6 +1,8 @@
 # Version 3.13.0
 
 * Fix Joe Lab file upload.
+* Deprecate parameter "anti-evasion-date"
+* Add parameter "system-date"
 
 # Version 3.12.0
 

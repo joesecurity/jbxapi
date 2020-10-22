@@ -96,8 +96,8 @@ submission_defaults = {
     'static-only': UnsetBool,
     # starts the Sample with normal user privileges
     'start-as-normal-user': UnsetBool,
-    # tries to bypass time-aware samples which check the system date
-    'anti-evasion-date': UnsetBool,
+    # Set the system date for the analysis. Format is YYYY-MM-DD
+    'system-date': None,
     # changes the locale, location, and keyboard layout of the analysis machine
     'language-and-locale': None,
     # Do not unpack archive files (zip, 7zip etc).
@@ -136,6 +136,7 @@ submission_defaults = {
 
     ## DEPRECATED PARAMETERS
     'office-files-password': None,
+    'anti-evasion-date': UnsetBool,
 }
 
 class JoeSandbox(object):
@@ -1212,8 +1213,8 @@ def cli(argv):
             help="Enable .Net tracing.")
     add_bool_param(params, "--normal-user", dest="param-start-as-normal-user",
             help="Start sample as normal user.")
-    add_bool_param(params, "--anti-evasion-date", dest="param-anti-evasion-date",
-            help="Bypass time-aware samples.")
+    params.add_argument("--system-date", dest="param-system-date", metavar="YYYY-MM-DD",
+            help="Set the system date.")
     add_bool_param(params, "--no-unpack", "--archive-no-unpack", dest="param-archive-no-unpack",
             help="Do not unpack archive (zip, 7zip etc).")
     add_bool_param(params, "--hypervisor-based-inspection", dest="param-hypervisor-based-inspection",
@@ -1247,6 +1248,8 @@ def cli(argv):
 
     # deprecated
     params.add_argument("--office-pw", dest="param-document-password", metavar="PASSWORD",
+            help=argparse.SUPPRESS)
+    add_bool_param(params, "--anti-evasion-date", dest="param-anti-evasion-date",
             help=argparse.SUPPRESS)
 
     # submission <command>

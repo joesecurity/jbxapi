@@ -324,6 +324,7 @@ def test_chunking(joe, monkeypatch):
         # test initial request
         assert "sample" not in mock.requests[0].data
         assert mock.requests[0].data["chunked-sample"] == os.path.basename(f.name)
+        assert mock.requests[0].url == "https://jbxcloud.joesecurity.org/api/v2/submission/new"
 
         # test first chunk
         assert mock.requests[1].data == {
@@ -335,10 +336,12 @@ def test_chunking(joe, monkeypatch):
             "current-chunk-index": 1,
             "current-chunk-size": 10485760,
         }
+        assert mock.requests[1].url == "https://jbxcloud.joesecurity.org/api/v2/submission/chunked-sample"
         assert type(mock.requests[1].data["chunk-count"]) == int
         assert type(mock.requests[1].data["current-chunk-size"]) == int
 
         # test last chunk
+        assert mock.requests[6].url == "https://jbxcloud.joesecurity.org/api/v2/submission/chunked-sample"
         assert mock.requests[6].data == {
             "apikey": "",
             "submission_id": "1",
@@ -363,6 +366,7 @@ def test_joelab_filesystem_upload(joe, monkeypatch):
 
         joe.joelab_filesystem_upload("machine", f)
 
+    assert mock.requests[0].url == "https://jbxcloud.joesecurity.org/api/v2/joelab/filesystem/upload-chunked"
 
 # CLI tests
 def test_cli_submit_file(monkeypatch):

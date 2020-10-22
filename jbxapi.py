@@ -396,7 +396,7 @@ class JoeSandbox(object):
             chunk_index += 1
 
             chunk_data.seek(0)
-            response = self._post(self.apiurl + '/v2/submission/chunked-sample', data=params, files={"chunk": chunk_data})
+            response = self._post(self.apiurl + url, data=params, files={"chunk": chunk_data})
             self._raise_or_extract(response)  # raise Exception if the response is negative
 
             sent_size += chunk_data_len

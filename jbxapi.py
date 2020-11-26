@@ -34,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.13.0"
+__version__ = "3.14.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -119,6 +119,8 @@ submission_defaults = {
     'remote-assistance-view-only': UnsetBool,
     # encryption password for analyses
     'encrypt-with-password': None,
+    # choose the browser for URL analyses
+    'browser': None,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
@@ -1227,6 +1229,8 @@ def cli(argv):
             help="Add tags to the analysis.")
     params.add_argument("--delete-after-days", "--delafter", type=int, dest="param-delete-after-days", metavar="DAYS",
             help="Delete analysis after X days.")
+    params.add_argument("--browser", dest="param-browser", metavar="BROWSER",
+            help="Browser for URL analyses.")
     add_bool_param(params, "--fast-mode", dest="param-fast-mode",
             help="Fast Mode focusses on fast analysis and detection versus deep forensic analysis.")
     add_bool_param(params, "--secondary-results", dest="param-secondary-results",

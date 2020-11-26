@@ -1,3 +1,7 @@
+# Version 3.14.0
+
+* Add parameter for choosing the browser.
+
 # Version 3.13.0
 
 * Fix Joe Lab file upload.

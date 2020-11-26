@@ -26,6 +26,7 @@ import random
 import errno
 import shutil
 import tempfile
+import math
 
 try:
     import requests
@@ -33,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.7.1"
+__version__ = "3.14.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -95,8 +96,8 @@ submission_defaults = {
     'static-only': UnsetBool,
     # starts the Sample with normal user privileges
     'start-as-normal-user': UnsetBool,
-    # tries to bypass time-aware samples which check the system date
-    'anti-evasion-date': UnsetBool,
+    # Set the system date for the analysis. Format is YYYY-MM-DD
+    'system-date': None,
     # changes the locale, location, and keyboard layout of the analysis machine
     'language-and-locale': None,
     # Do not unpack archive files (zip, 7zip etc).
@@ -118,6 +119,8 @@ submission_defaults = {
     'remote-assistance-view-only': UnsetBool,
     # encryption password for analyses
     'encrypt-with-password': None,
+    # choose the browser for URL analyses
+    'browser': None,
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
@@ -135,6 +138,7 @@ submission_defaults = {
 
     ## DEPRECATED PARAMETERS
     'office-files-password': None,
+    'anti-evasion-date': UnsetBool,
 }
 
 class JoeSandbox(object):
@@ -218,7 +222,8 @@ class JoeSandbox(object):
             except KeyError:
                 break
 
-    def submit_sample(self, sample, cookbook=None, params={}, _extra_params={}):
+    def submit_sample(self, sample, cookbook=None, params={},
+                      _extra_params={}, _chunked_upload=True):
         """
         Submit a sample and returns the submission id.
 
@@ -248,13 +253,50 @@ class JoeSandbox(object):
             with open("sample.exe", "rb") as f:
                 joe.submit_sample(f, cookbook=cookbook)
         """
+        params = copy.copy(params)
+        files = {}
+
         self._check_user_parameters(params)
 
-        files = {'sample': sample}
         if cookbook:
             files['cookbook'] = cookbook
 
-        return self._submit(params, files, _extra_params=_extra_params)
+        # extract sample name
+        if isinstance(sample, (tuple, list)):
+            filename, sample = sample
+        else:  # sample is file-like object
+            filename = requests.utils.guess_filename(sample) or "sample"
+
+        retry_with_regular_upload = False
+        if _chunked_upload:
+            orig_pos = sample.tell()
+            params["chunked-sample"] = filename
+
+            try:
+                response = self._submit(params, files, _extra_params=_extra_params)
+
+                self._chunked_upload('/v2/submission/chunked-sample', sample, {
+                    "apikey": self.apikey,
+                    "submission_id": response["submission_id"],
+                })
+            except InvalidParameterError as e:
+                # re-raise if the error is not due to unsupported chunked upload
+                if "chunked-sample" not in e.message:
+                    raise
+
+                retry_with_regular_upload = True
+            except _ChunkedUploadNotPossible as e:
+                retry_with_regular_upload = True
+
+        if retry_with_regular_upload:
+            del params["chunked-sample"]
+            sample.seek(orig_pos)
+
+        if not _chunked_upload or retry_with_regular_upload:
+            files["sample"] = (filename, sample)
+            response = self._submit(params, files, _extra_params=_extra_params)
+
+        return response
 
     def submit_sample_url(self, url, params={}, _extra_params={}):
         """
@@ -316,8 +358,90 @@ class JoeSandbox(object):
         data.update(_extra_params)
 
         response = self._post(self.apiurl + '/v2/submission/new', data=data, files=files)
-
         return self._raise_or_extract(response)
+
+    def _chunked_upload(self, url, f, params):
+        try:
+            file_size = self._file_size(f)
+        except (IOError, OSError):
+            raise _ChunkedUploadNotPossible("The file does not support chunked upload.")
+
+        chunk_size = 10 * 1024 * 1024
+        chunk_count = int(math.ceil(file_size / chunk_size))
+
+        params = copy.copy(params)
+        params.update({
+            "file-size": file_size,
+            "chunk-size": chunk_size,
+            "chunk-count": chunk_count,
+        })
+
+        chunk_index = 1
+        sent_size = 0
+        response = None
+        while sent_size < file_size:
+            # collect next chunk
+            chunk_data = io.BytesIO()
+            chunk_data_len = 0
+            while chunk_data_len < chunk_size:
+                read_data = f.read(chunk_size - chunk_data_len)
+                if read_data is None:
+                    raise _ChunkedUploadNotPossible("Non-blocking files are not supported.")
+
+                if len(read_data) <= 0:
+                    break
+
+                chunk_data.write(read_data)
+                chunk_data_len += len(read_data)
+
+            params["current-chunk-index"] = chunk_index
+            params["current-chunk-size"] = chunk_data_len
+            chunk_index += 1
+
+            chunk_data.seek(0)
+            response = self._post(self.apiurl + url, data=params, files={"chunk": chunk_data})
+            self._raise_or_extract(response)  # raise Exception if the response is negative
+
+            sent_size += chunk_data_len
+
+        return response
+
+    def _file_size(self, f):
+        """
+        Tries to find the size of the file-like object 'f'.
+        If the file-pointer is advanced (f.tell()) it subtracts this.
+
+        Raises ValueError if it fails to do so.
+        """
+
+        pos = f.tell()
+        f.seek(0, os.SEEK_END)
+        end_pos = f.tell()
+        f.seek(pos, os.SEEK_SET)
+        return end_pos - pos
+
+    def submission_list(self):
+        """
+        Fetch all submissions. Returns an iterator.
+
+        The returned iterator can throw an exception every time `next()` is called on it.
+        """
+
+        pagination_next = None
+        while True:
+            response = self._post(self.apiurl + '/v2/submission/list', data={
+                "apikey": self.apikey,
+                "pagination_next": pagination_next,
+            })
+
+            data = self._raise_or_extract(response)
+            for item in data:
+                yield item
+
+            try:
+                pagination_next = response.json()["pagination"]["next"]
+            except KeyError:
+                break
 
     def submission_info(self, submission_id):
         """
@@ -515,7 +639,7 @@ class JoeSandbox(object):
                                                                              'image': image})
         return self._raise_or_extract(response)
 
-    def joelab_filesystem_upload(self, machine, file, path=None):
+    def joelab_filesystem_upload(self, machine, file, path=None, _chunked_upload=True):
         """
         Upload a file to a Joe Lab machine.
 
@@ -531,18 +655,33 @@ class JoeSandbox(object):
             "machine": machine,
             "path": path,
         }
-        files = {'file': file}
 
-        response = self._post(self.apiurl + '/v2/joelab/filesystem/upload', data=data, files=files)
+        # extract sample name
+        if isinstance(file, (tuple, list)):
+            filename, file = file
+        else:  # sample is file-like object
+            filename = requests.utils.guess_filename(file) or "file"
+
+        retry_with_regular_upload = False
+        if _chunked_upload:
+            orig_pos = file.tell()
+            # filename
+
+            try:
+                response = self._chunked_upload('/v2/joelab/filesystem/upload-chunked', file, data)
+            except (UnknownEndpointError, _ChunkedUploadNotPossible) as e:
+                retry_with_regular_upload = True
+                file.seek(orig_pos)
+
+        if not _chunked_upload or retry_with_regular_upload:
+            files = {"file": (filename, file)}
+            response = self._post(self.apiurl + '/v2/joelab/filesystem/upload', data=data, files=files)
 
         return self._raise_or_extract(response)
 
     def joelab_filesystem_download(self, machine, path, file):
         """
         Download a file from a Joe Lab machine.
-
-        When `file` is given, the return value is the filename specified by the server,
-        otherwise it's a tuple of (filename, bytes).
 
         Parameters:
             machine:  The machine id.
@@ -599,6 +738,66 @@ class JoeSandbox(object):
         response = self._post(self.apiurl + "/v2/joelab/network/update", data=params)
 
         return self._raise_or_extract(response)
+
+    def joelab_pcap_start(self, machine):
+        """
+        Start PCAP recording.
+        """
+
+        params = {
+            'apikey': self.apikey,
+            'accept-tac': "1" if self.accept_tac else "0",
+            'machine': machine,
+        }
+
+        response = self._post(self.apiurl + "/v2/joelab/pcap/start", data=params)
+
+        return self._raise_or_extract(response)
+
+    def joelab_pcap_stop(self, machine):
+        """
+        Stop PCAP recording.
+        """
+
+        params = {
+            'apikey': self.apikey,
+            'accept-tac': "1" if self.accept_tac else "0",
+            'machine': machine,
+        }
+
+        response = self._post(self.apiurl + "/v2/joelab/pcap/stop", data=params)
+
+        return self._raise_or_extract(response)
+
+    def joelab_pcap_download(self, machine, file):
+        """
+        Download the captured PCAP.
+
+        Parameters:
+            machine:  The machine id.
+            file:     a writable file-like object
+
+        Example:
+
+            with open("dump.pcap", "wb") as f:
+                joe.joelab_pcap_download("w7_10", f)
+        """
+
+        data = {'apikey': self.apikey,
+                'machine': machine}
+
+        response = self._post(self.apiurl + "/v2/joelab/pcap/download", data=data, stream=True)
+
+        # do standard error handling when encountering an error (i.e. throw an exception)
+        if not response.ok:
+            self._raise_or_extract(response)
+            raise RuntimeError("Unreachable because statement above should raise.")
+
+        try:
+            for chunk in response.iter_content(1024):
+                file.write(chunk)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(e)
 
     def joelab_list_exitpoints(self):
         """
@@ -695,6 +894,9 @@ class JoeException(Exception):
 class ConnectionError(JoeException):
     pass
 
+class _ChunkedUploadNotPossible(JoeException):
+    pass
+
 class ApiError(JoeException):
     def __new__(cls, raw):
         # select a more specific subclass if available
@@ -706,6 +908,7 @@ class ApiError(JoeException):
                 5: ServerOfflineError,
                 6: InternalServerError,
                 7: PermissionError,
+                8: UnknownEndpointError,
             }
 
             try:
@@ -727,6 +930,7 @@ class InvalidApiKeyError(ApiError): pass
 class ServerOfflineError(ApiError): pass
 class InternalServerError(ApiError): pass
 class PermissionError(ApiError): pass
+class UnknownEndpointError(ApiError): pass
 
 def _cli_bytes_from_str(text):
     """
@@ -777,6 +981,9 @@ def cli(argv):
                 if f_cookbook is not None:
                     f_cookbook.close()
 
+    def submission_list(joe, args):
+        print_json(list(joe.submission_list()))
+
     def submission_info(joe, args):
         print_json(joe.submission_info(args.submission_id))
 
@@ -791,6 +998,9 @@ def cli(argv):
 
     def analysis_delete(joe, args):
         print_json(joe.analysis_delete(args.webid))
+
+    def account_info(joe, args):
+        print_json(joe.account_info())
 
     def server_info(joe, args):
         print_json(joe.server_info())
@@ -881,13 +1091,27 @@ def cli(argv):
         print_json(joe.joelab_network_info(args.machine))
 
     def joelab_network_update(joe, args):
-        print(args)
-        return
-
         print_json(joe.joelab_network_update(args.machine, {
             "internet-enabled": args.enable_internet,
             "internet-exitpoint": args.internet_exitpoint,
         }))
+
+    def joelab_pcap_start(joe, args):
+        print_json(joe.joelab_pcap_start(args.machine))
+
+    def joelab_pcap_stop(joe, args):
+        print_json(joe.joelab_pcap_stop(args.machine))
+
+    def joelab_pcap_download(joe, args):
+        output_path = args.destination
+        if os.path.isdir(output_path):
+            filename = "{}.pcap".format(args.machine)
+            output_path = os.path.join(output_path, filename)
+
+        with open(output_path, "wb") as f:
+            joe.joelab_pcap_download(args.machine, f)
+
+        print_json({"path": os.path.abspath(output_path)})
 
     def joelab_exitpoints_list(joe, args):
         print_json(joe.joelab_list_exitpoints())
@@ -916,7 +1140,7 @@ def cli(argv):
 
     # submit <filepath>
     submit_parser = subparsers.add_parser('submit', parents=[common_parser],
-            usage="%(prog)s [--apiurl APIKEY] [--apikey APIKEY] [--accept-tac]\n" +
+            usage="%(prog)s [--apiurl APIURL] [--apikey APIKEY] [--accept-tac]\n" +
                   24 * " " + "[parameters ...]\n" +
                   24 * " " + "[--url | --sample-url | --cookbook COOKBOOK]\n" +
                   24 * " " + "sample",
@@ -991,8 +1215,8 @@ def cli(argv):
             help="Enable .Net tracing.")
     add_bool_param(params, "--normal-user", dest="param-start-as-normal-user",
             help="Start sample as normal user.")
-    add_bool_param(params, "--anti-evasion-date", dest="param-anti-evasion-date",
-            help="Bypass time-aware samples.")
+    params.add_argument("--system-date", dest="param-system-date", metavar="YYYY-MM-DD",
+            help="Set the system date.")
     add_bool_param(params, "--no-unpack", "--archive-no-unpack", dest="param-archive-no-unpack",
             help="Do not unpack archive (zip, 7zip etc).")
     add_bool_param(params, "--hypervisor-based-inspection", dest="param-hypervisor-based-inspection",
@@ -1005,6 +1229,8 @@ def cli(argv):
             help="Add tags to the analysis.")
     params.add_argument("--delete-after-days", "--delafter", type=int, dest="param-delete-after-days", metavar="DAYS",
             help="Delete analysis after X days.")
+    params.add_argument("--browser", dest="param-browser", metavar="BROWSER",
+            help="Browser for URL analyses.")
     add_bool_param(params, "--fast-mode", dest="param-fast-mode",
             help="Fast Mode focusses on fast analysis and detection versus deep forensic analysis.")
     add_bool_param(params, "--secondary-results", dest="param-secondary-results",
@@ -1027,12 +1253,19 @@ def cli(argv):
     # deprecated
     params.add_argument("--office-pw", dest="param-document-password", metavar="PASSWORD",
             help=argparse.SUPPRESS)
+    add_bool_param(params, "--anti-evasion-date", dest="param-anti-evasion-date",
+            help=argparse.SUPPRESS)
 
     # submission <command>
     submission_parser = subparsers.add_parser('submission',
             help="Manage submissions")
     submission_subparsers = submission_parser.add_subparsers(metavar="<submission command>", title="submission commands")
     submission_subparsers.required = True
+
+    # submission list
+    submission_list_parser = submission_subparsers.add_parser('list', parents=[common_parser],
+            help="Show all submitted submissions.")
+    submission_list_parser.set_defaults(func=submission_list)
 
     # submission info <submission_id>
     submission_info_parser = submission_subparsers.add_parser('info', parents=[common_parser],
@@ -1110,6 +1343,17 @@ def cli(argv):
             help="Resource types to download. Consult the help for all types. "
                  "(default 'html')")
     download_parser.set_defaults(func=analysis_download)
+
+    # account <command>
+    account_parser = subparsers.add_parser('account',
+            help="Query account info (Cloud Pro only)")
+    account_subparsers = account_parser.add_subparsers(metavar="<command>", title="account commands")
+    account_subparsers.required = True
+
+    # account info
+    account_info_parser = account_subparsers.add_parser('info', parents=[common_parser],
+            help="Show information about the Joe Sandbox Cloud Pro account.")
+    account_info_parser.set_defaults(func=account_info)
 
     # server
     server_parser = subparsers.add_parser('server',
@@ -1222,6 +1466,31 @@ def cli(argv):
     joelab_network_update_parser.add_argument("--disable-internet", dest="enable_internet", action="store_false", default=None)
     joelab_network_update_parser.add_argument("--internet-exitpoint")
     joelab_network_update_parser.set_defaults(func=joelab_network_update)
+
+    # joelab pcap <command>
+    joelab_pcap_parser = joelab_subparsers.add_parser('pcap',
+            help="PCAP Commands")
+    joelab_pcap_subparsers = joelab_pcap_parser.add_subparsers(metavar="<command>", title="PCAP commands")
+    joelab_pcap_subparsers.required = True
+
+    # joelab pcap download
+    joelab_pcap_download_parser = joelab_pcap_subparsers.add_parser('download', parents=[common_parser],
+            help="Download the most recent PCAP")
+    joelab_pcap_download_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_pcap_download_parser.add_argument("-d", "--destination", default=".", help="Destination", metavar="PATH")
+    joelab_pcap_download_parser.set_defaults(func=joelab_pcap_download)
+
+    # joelab pcap start
+    joelab_pcap_start_parser = joelab_pcap_subparsers.add_parser('start', parents=[common_parser],
+            help="Start PCAP recodring")
+    joelab_pcap_start_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_pcap_start_parser.set_defaults(func=joelab_pcap_start)
+
+    # joelab pcap stop
+    joelab_pcap_stop_parser = joelab_pcap_subparsers.add_parser('stop', parents=[common_parser],
+            help="Stop PCAP recording")
+    joelab_pcap_stop_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_pcap_stop_parser.set_defaults(func=joelab_pcap_stop)
 
     # joelab internet-exitpoints <command>
     joelab_exitpoints_parser = joelab_subparsers.add_parser('internet-exitpoints',

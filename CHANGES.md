@@ -1,3 +1,34 @@
+# Version 3.14.0
+
+* Add parameter for choosing the browser.
+
+# Version 3.13.0
+
+* Fix Joe Lab file upload.
+* Deprecate parameter "anti-evasion-date"
+* Add parameter "system-date"
+
+# Version 3.12.0
+
+* Joe Lab file upload uses chunked submissions now.
+
+# Version 3.11.0
+
+* Improve submission code to upload large samples through chunked upload.
+
+# Version 3.10.0
+
+* Add `submission/list` endpoint to CLI and API.
+
+# Version 3.9.0
+
+* Fix `joelab network update` CLI command.
+* Add `joelab pcap` commands to the API and the CLI.
+
+# Version 3.8.0
+
+* Add `account info` command to CLI.
+
 # Version 3.7.1
 
 * In version 3.7, the CLI did not check the certificates unless `--no-check-certificate` was enabled.

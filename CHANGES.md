@@ -1,3 +1,7 @@
+# Version 3.15.0
+
+* Add parameter `include_shared` to `submission/list` endpoint.
+
 # Version 3.14.0
 
 * Add parameter for choosing the browser.

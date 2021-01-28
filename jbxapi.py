@@ -34,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.14.0"
+__version__ = "3.15.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -337,17 +337,14 @@ class JoeSandbox(object):
             params['office-files-password'] = params.pop('document-password')
 
         # submit booleans as "0" and "1"
-        for key, value in params.items():
+        for key, value in list(params.items()):
             try:
                 default = submission_defaults[key]
             except KeyError:
                 continue
 
-            if default is True or default is False or default is UnsetBool:
-                if value is None or value is UnsetBool:
-                    params[key] = None
-                else:
-                    params[key] = "1" if value else "0"
+            if default is UnsetBool or isinstance(default, bool):
+                params[key] = _to_bool(value, default)
 
         return params
 
@@ -420,18 +417,23 @@ class JoeSandbox(object):
         f.seek(pos, os.SEEK_SET)
         return end_pos - pos
 
-    def submission_list(self):
+    def submission_list(self, **kwargs):
         """
         Fetch all submissions. Returns an iterator.
 
+        You can give the named parameter `include_shared`.
+
         The returned iterator can throw an exception every time `next()` is called on it.
         """
+
+        include_shared = kwargs.get("include_shared", None)
 
         pagination_next = None
         while True:
             response = self._post(self.apiurl + '/v2/submission/list', data={
                 "apikey": self.apikey,
                 "pagination_next": pagination_next,
+                "include-shared": _to_bool(include_shared),
             })
 
             data = self._raise_or_extract(response)
@@ -727,10 +729,7 @@ class JoeSandbox(object):
 
         params = dict(settings)
 
-        # convert booleans to "0" and "1"
-        if params["internet-enabled"] is not None:
-            params["internet-enabled"] = "1" if params["internet-enabled"] else "0"
-
+        params["internet-enabled"] = _to_bool(params["internet-enabled"])
         params['apikey'] = self.apikey
         params['accept-tac'] = "1" if self.accept_tac else "0"
         params['machine'] = machine
@@ -982,7 +981,7 @@ def cli(argv):
                     f_cookbook.close()
 
     def submission_list(joe, args):
-        print_json(list(joe.submission_list()))
+        print_json(list(joe.submission_list(include_shared=args.include_shared)))
 
     def submission_info(joe, args):
         print_json(joe.submission_info(args.submission_id))
@@ -1265,6 +1264,8 @@ def cli(argv):
     # submission list
     submission_list_parser = submission_subparsers.add_parser('list', parents=[common_parser],
             help="Show all submitted submissions.")
+    add_bool_param(submission_list_parser, "--include-shared", dest="include_shared",
+            help="Include shared submissions")
     submission_list_parser.set_defaults(func=submission_list)
 
     # submission info <submission_id>
@@ -1581,6 +1582,22 @@ def main(argv=None):
         sys.argv = win32_unicode_argv()
 
     cli(argv if argv is not None else sys.argv[1:])
+
+
+def _to_bool(value, default=None):
+    """
+    Booleans should be submitted as "0" or "1". They can also be missing.
+
+    Returns "0", "1" or `None`
+    """
+
+    if value is None or value is UnsetBool:
+        value = default
+
+    if value is None or value is UnsetBool:
+        return None
+    else:
+        return "1" if value else "0"
 
 
 def _urllib3_fix_filenames(kwargs):

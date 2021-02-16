@@ -1,3 +1,7 @@
+# Version 3.16.0
+
+* Add submission parameter `priority` for on-premise installations.
+
 # Version 3.15.0
 
 * Add parameter `include_shared` to `submission/list` endpoint.

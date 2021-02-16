@@ -34,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.15.0"
+__version__ = "3.16.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -1248,6 +1248,8 @@ def cli(argv):
     params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str,
             dest="param-encrypt-with-password", metavar="PASSWORD",
             help="Encrypt the analysis data with the given password")
+    params.add_argument("--priority", dest="param-priority", type=int,
+            help="Priority of submission. (Only on on-premise.)")
 
     # deprecated
     params.add_argument("--office-pw", dest="param-document-password", metavar="PASSWORD",

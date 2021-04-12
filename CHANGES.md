@@ -1,3 +1,7 @@
+# Version 3.17.0
+
+* Removal of `remote-assistance-view-only`.
+
 # Version 3.16.0
 
 * Add submission parameter `priority` for on-premise installations.

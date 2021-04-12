@@ -34,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.16.0"
+__version__ = "3.17.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -115,8 +115,6 @@ submission_defaults = {
     'amsi-unpacking': UnsetBool,
     # Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. Default false
     'remote-assistance': UnsetBool,
-    # Use view-only remote assistance. Only applies to Windows. Visible only through the web UI. Default false
-    'remote-assistance-view-only': UnsetBool,
     # encryption password for analyses
     'encrypt-with-password': None,
     # choose the browser for URL analyses
@@ -139,6 +137,7 @@ submission_defaults = {
     ## DEPRECATED PARAMETERS
     'office-files-password': None,
     'anti-evasion-date': UnsetBool,
+    'remote-assistance-view-only': UnsetBool,
 }
 
 class JoeSandbox(object):
@@ -1243,8 +1242,6 @@ def cli(argv):
     add_bool_param(params, "--remote-assistance", dest="param-remote-assistance",
             help="Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. "
                  "Default off. If enabled, disables VBA instrumentation.")
-    add_bool_param(params, "--remote-assistance-view-only", dest="param-remote-assistance-view-only",
-            help="Use view-only remote assistance. Only applies to Windows. Visible only through the web UI. Default off.")
     params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str,
             dest="param-encrypt-with-password", metavar="PASSWORD",
             help="Encrypt the analysis data with the given password")

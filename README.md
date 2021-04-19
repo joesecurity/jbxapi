@@ -38,9 +38,9 @@ For upgrading `jbxapi` to a more recent version, use
 
 ## Manually
 
-1. Install [python-requests](http://docs.python-requests.org/en/latest/)
+1. Install [requests](https://docs.python-requests.org/en/latest/)
 
-        pip install python-request
+        pip install requests
 
 2. Copy `jbxapi.py` to where you need it.
 

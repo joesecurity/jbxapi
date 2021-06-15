@@ -34,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.17.0"
+__version__ = "3.17.1"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -92,8 +92,6 @@ submission_defaults = {
     'dotnet-tracing': UnsetBool,
     # send an e-mail upon completion of the analysis
     'email-notification': UnsetBool,
-    # only run static analysis. Disables the dynamic analysis.
-    'static-only': UnsetBool,
     # starts the Sample with normal user privileges
     'start-as-normal-user': UnsetBool,
     # Set the system date for the analysis. Format is YYYY-MM-DD
@@ -138,6 +136,7 @@ submission_defaults = {
     'office-files-password': None,
     'anti-evasion-date': UnsetBool,
     'remote-assistance-view-only': UnsetBool,
+    'static-only': UnsetBool,
 }
 
 class JoeSandbox(object):

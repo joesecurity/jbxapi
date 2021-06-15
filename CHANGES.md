@@ -1,3 +1,8 @@
+# Version 3.17.1
+
+* Updated the API documentation.
+* Removed the `static-only` parameter.
+
 # Version 3.17.0
 
 * Removal of `remote-assistance-view-only`.

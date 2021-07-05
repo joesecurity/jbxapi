@@ -1,3 +1,8 @@
+# Version 3.17.2
+
+* Removed `static-only` parameter
+* Renamed `remote assistance` to `live interaction`
+
 # Version 3.17.1
 
 * Updated the API documentation.

@@ -34,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.17.1"
+__version__ = "3.17.2"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -111,8 +111,8 @@ submission_defaults = {
     'apk-instrumentation': UnsetBool,
     # Perform AMSI unpacking. Only applies to Windows. Default true
     'amsi-unpacking': UnsetBool,
-    # Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. Default false
-    'remote-assistance': UnsetBool,
+    # Use live interaction. Requires user interaction via the web UI. Default false
+    'live-interaction': UnsetBool,
     # encryption password for analyses
     'encrypt-with-password': None,
     # choose the browser for URL analyses
@@ -135,6 +135,7 @@ submission_defaults = {
     ## DEPRECATED PARAMETERS
     'office-files-password': None,
     'anti-evasion-date': UnsetBool,
+    'remote-assistance': UnsetBool,
     'remote-assistance-view-only': UnsetBool,
     'static-only': UnsetBool,
 }
@@ -1238,9 +1239,9 @@ def cli(argv):
             help="Perform APK DEX code instrumentation. Only applies to Android analyzer. Default on.")
     add_bool_param(params, "--amsi-unpacking", dest="param-amsi-unpacking",
             help="Perform AMSI unpacking. Only applies to Windows analyzer. Default on.")
-    add_bool_param(params, "--remote-assistance", dest="param-remote-assistance",
-            help="Use remote assistance. Only applies to Windows. Requires user interaction via the web UI. "
-                 "Default off. If enabled, disables VBA instrumentation.")
+    add_bool_param(params, "--live-interaction", dest="param-live-interaction",
+            help="Use live interaction. Requires user interaction via the web UI. "
+                 "Default off.")
     params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str,
             dest="param-encrypt-with-password", metavar="PASSWORD",
             help="Encrypt the analysis data with the given password")
@@ -1251,6 +1252,8 @@ def cli(argv):
     params.add_argument("--office-pw", dest="param-document-password", metavar="PASSWORD",
             help=argparse.SUPPRESS)
     add_bool_param(params, "--anti-evasion-date", dest="param-anti-evasion-date",
+            help=argparse.SUPPRESS)
+    add_bool_param(params, "--remote-assistance", dest="param-remote-assistance",
             help=argparse.SUPPRESS)
 
     # submission <command>

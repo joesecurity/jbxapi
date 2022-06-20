@@ -529,3 +529,24 @@ def test_cli_no_check_certificate(monkeypatch):
     jbxapi.cli(["submit", "--url", "https://example.net", "--no-check-certificate"])
 
     assert response.verify_ssl is False
+
+# helpers test
+
+def test_to_bool():
+    assert jbxapi._to_bool(True) == "1"
+    assert jbxapi._to_bool(False) == "0"
+
+    assert jbxapi._to_bool("trueish") == "1"
+    assert jbxapi._to_bool("") == "0"
+
+    assert jbxapi._to_bool(None) is None
+
+    assert jbxapi._to_bool(None, None) is None
+    assert jbxapi._to_bool(None, True) == "1"
+    assert jbxapi._to_bool(None, False) == "0"
+
+    assert jbxapi._to_bool(jbxapi.UnsetBool, None) is None
+    assert jbxapi._to_bool(jbxapi.UnsetBool, True) == "1"
+    assert jbxapi._to_bool(jbxapi.UnsetBool, False) == "0"
+
+    assert jbxapi._to_bool(None, jbxapi.UnsetBool) is None

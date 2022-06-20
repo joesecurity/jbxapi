@@ -1,3 +1,25 @@
+# Version 3.17.2
+
+* Removed `static-only` parameter
+* Renamed `remote assistance` to `live interaction`
+
+# Version 3.17.1
+
+* Updated the API documentation.
+* Removed the `static-only` parameter.
+
+# Version 3.17.0
+
+* Removal of `remote-assistance-view-only`.
+
+# Version 3.16.0
+
+* Add submission parameter `priority` for on-premise installations.
+
+# Version 3.15.0
+
+* Add parameter `include_shared` to `submission/list` endpoint.
+
 # Version 3.14.0
 
 * Add parameter for choosing the browser.

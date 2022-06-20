@@ -34,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.17.2"
+__version__ = "3.17.3"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -314,6 +314,15 @@ class JoeSandbox(object):
         params = copy.copy(params)
         params['url'] = url
         return self._submit(params, _extra_params=_extra_params)
+        
+    def submit_command_line(self, command_line, params={}, _extra_params={}):
+        """
+        Submit a commandline for analysis.
+        """
+        self._check_user_parameters(params)
+        params = copy.copy(params)
+        params['command-line'] = command_line
+        return self._submit(params, _extra_params=_extra_params)        
 
     def submit_cookbook(self, cookbook, params={}, _extra_params={}):
         """
@@ -961,6 +970,8 @@ def cli(argv):
             print_json(joe.submit_url(args.sample, params=params, _extra_params=extra_params))
         elif args.sample_url_mode:
             print_json(joe.submit_sample_url(args.sample, params=params, _extra_params=extra_params))
+        elif args.command_line_mode:
+            print_json(joe.submit_command_line(args.sample, params=params, _extra_params=extra_params))            
         else:
             try:
                 f_cookbook = open(args.cookbook, "rb") if args.cookbook is not None else None
@@ -1140,7 +1151,7 @@ def cli(argv):
     submit_parser = subparsers.add_parser('submit', parents=[common_parser],
             usage="%(prog)s [--apiurl APIURL] [--apikey APIKEY] [--accept-tac]\n" +
                   24 * " " + "[parameters ...]\n" +
-                  24 * " " + "[--url | --sample-url | --cookbook COOKBOOK]\n" +
+                  24 * " " + "[--url | --sample-url | -command-line | --cookbook COOKBOOK]\n" +
                   24 * " " + "sample",
             help="Submit a sample to Joe Sandbox.")
     submit_parser.add_argument('sample',
@@ -1154,6 +1165,9 @@ def cli(argv):
     # sample url submissions
     submission_mode_parser.add_argument('--sample-url', dest="sample_url_mode", action="store_true",
             help="Download the sample from the given url.")
+    # command line submissions
+    submission_mode_parser.add_argument('--command-line', dest="command_line_mode", action="store_true",
+            help="Run the command using cmd.exe.")            
     # cookbook submission
     submission_mode_parser.add_argument('--cookbook', dest="cookbook",
             help="Use the given cookbook.")

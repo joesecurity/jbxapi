@@ -157,6 +157,14 @@ def test_sample_url_submission(joe, monkeypatch):
     assert "sample-url" in mock.requests[0].data
     assert mock.requests[0].files is None
 
+def test_command_line_submission(joe, monkeypatch):
+    mock = MockedResponse(ok=True, json=successful_submission)
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+
+    response = joe.submit_command_line("ipconfig")
+    assert response == successful_submission["data"]
+    assert "command-line" in mock.requests[0].data
+    assert mock.requests[0].files is None
 
 def test_cookbook_submission(joe, monkeypatch):
     mock = MockedResponse(ok=True, json=successful_submission)

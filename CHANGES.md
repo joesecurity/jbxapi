@@ -1,3 +1,7 @@
+# Version 3.18.0
+
+* Added command line submission type
+
 # Version 3.17.2
 
 * Removed `static-only` parameter

@@ -214,3 +214,7 @@ class JoeSandbox(builtins.object)
  |  
  |  submit_url(self, url, params={}, _extra_params={})
  |      Submit a website for analysis.
+ |
+ |  submit_command_line(self, command_line, params={}, _extra_params={})
+ |      Submit a command line to be executed with cmd.exe
+  

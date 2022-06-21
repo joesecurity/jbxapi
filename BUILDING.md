@@ -27,13 +27,7 @@ py -3 -m pytest
 
 Based on the tutorial here: https://packaging.python.org/tutorials/packaging-projects/ 
 
-1. Build the package
-
-```
-flit build
-```
-
-3. Upload the package to PyPi:
+Upload the package to PyPi:
 
 ```
 flit publish

@@ -1,6 +1,6 @@
 # Building Requirements
 
-* twine
+* flit
 * build
 * pytest
 * Python >=3.8.7 or >=3.9.1 because earlier versions leak paths:
@@ -27,20 +27,14 @@ py -3 -m pytest
 
 Based on the tutorial here: https://packaging.python.org/tutorials/packaging-projects/ 
 
-1. Remove old packages
+1. Build the package
 
 ```
-rm dist/*
-```
-
-2. Build the package
-
-```
-py -3 -m build
+flit build
 ```
 
 3. Upload the package to PyPi:
 
 ```
-py -3 -m twine upload dist/*
+flit publish
 ```

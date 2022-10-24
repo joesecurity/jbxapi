@@ -156,7 +156,7 @@ class JoeSandbox(object):
           verify_ssl: Enable or disable checking SSL certificates.
           retries:    Number of times requests should be retried if they timeout.
           proxies:    Proxy settings, see the requests library for more information:
-                      http://docs.python-requests.org/en/master/user/advanced/#proxies
+                      https://requests.readthedocs.io/en/latest/user/advanced/#proxies
           user_agent: The user agent. Use this when you write an integration with Joe Sandbox
                       so that it is possible to track how often an integration is being used.
         """

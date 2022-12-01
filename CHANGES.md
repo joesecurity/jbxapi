@@ -1,3 +1,7 @@
+# Version 3.19.0
+
+* Added `disable-chained-runs` parameter
+
 # Version 3.18.0
 
 * Added command line submission type

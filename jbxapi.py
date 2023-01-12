@@ -636,7 +636,7 @@ class JoeSandbox(object):
         """
         List available images.
         """
-        response = self._post(self.apiurl + "/v2/joelab/machine/info", data={'apikey': self.apikey,
+        response = self._post(self.apiurl + "/v2/joelab/images/list", data={'apikey': self.apikey,
                                                                              'machine': machine})
 
         return self._raise_or_extract(response)
@@ -645,7 +645,7 @@ class JoeSandbox(object):
         """
         Reset the disk image of a machine.
         """
-        response = self._post(self.apiurl + "/v2/joelab/machine/info", data={'apikey': self.apikey,
+        response = self._post(self.apiurl + "/v2/joelab/images/reset", data={'apikey': self.apikey,
                                                                              'machine': machine,
                                                                              'accept-tac': "1" if self.accept_tac else "0",
                                                                              'image': image})

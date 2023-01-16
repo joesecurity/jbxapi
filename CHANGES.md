@@ -1,3 +1,7 @@
+# Version 3.20.0
+
+* Fix `joelab_images_list` and `joelab_images_reset` functions
+
 # Version 3.19.0
 
 * Added `disable-chained-runs` parameter

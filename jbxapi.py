@@ -640,10 +640,20 @@ class JoeSandbox(object):
                                                                              'machine': machine})
 
         return self._raise_or_extract(response)
+       
+    def joelab_images_capture(self, machine, image=None):
+        """
+        Capture disk image of a machine.
+        """
+        response = self._post(self.apiurl + "/v2/joelab/images/capture", data={'apikey': self.apikey,
+                                                                             'machine': machine,
+                                                                             'accept-tac': "1" if self.accept_tac else "0",
+                                                                             'image': image})
+        return self._raise_or_extract(response)       
 
     def joelab_images_reset(self, machine, image=None):
         """
-        Reset the disk image of a machine.
+        Reset a disk image of a machine.
         """
         response = self._post(self.apiurl + "/v2/joelab/images/reset", data={'apikey': self.apikey,
                                                                              'machine': machine,

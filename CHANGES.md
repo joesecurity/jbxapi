@@ -1,3 +1,8 @@
+# Version 3.21.0
+
+* Add `joelab_images_capture` endpoint for capturing new images.
+* Use `python3` interpreter when called as a CLI
+
 # Version 3.20.0
 
 * Fix `joelab_images_list` and `joelab_images_reset` functions

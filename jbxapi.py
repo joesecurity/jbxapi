@@ -640,10 +640,20 @@ class JoeSandbox(object):
                                                                              'machine': machine})
 
         return self._raise_or_extract(response)
+       
+    def joelab_images_capture(self, machine, image=None):
+        """
+        Capture disk image of a machine.
+        """
+        response = self._post(self.apiurl + "/v2/joelab/images/capture", data={'apikey': self.apikey,
+                                                                             'machine': machine,
+                                                                             'accept-tac': "1" if self.accept_tac else "0",
+                                                                             'image': image})
+        return self._raise_or_extract(response)       
 
     def joelab_images_reset(self, machine, image=None):
         """
-        Reset the disk image of a machine.
+        Reset a disk image of a machine.
         """
         response = self._post(self.apiurl + "/v2/joelab/images/reset", data={'apikey': self.apikey,
                                                                              'machine': machine,
@@ -1095,6 +1105,9 @@ def cli(argv):
     def joelab_images_list(joe, args):
         print_json(joe.joelab_images_list(args.machine))
 
+    def joelab_images_capture(joe, args):
+        print_json(joe.joelab_images_capture(args.machine, args.image))        
+
     def joelab_images_reset(joe, args):
         print_json(joe.joelab_images_reset(args.machine, args.image))
 
@@ -1457,6 +1470,13 @@ def cli(argv):
             help="List the stored images.")
     joelab_images_list_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
     joelab_images_list_parser.set_defaults(func=joelab_images_list)
+
+    # joelab images capture
+    joelab_images_reset_parser = joelab_images_subparsers.add_parser('capture', parents=[common_parser],
+            help="Capture a machine image")
+    joelab_images_reset_parser.add_argument("--machine", required=True, help="Joe Lab machine ID")
+    joelab_images_reset_parser.add_argument("--image", help="Image ID")
+    joelab_images_reset_parser.set_defaults(func=joelab_images_capture)
 
     # joelab images reset
     joelab_images_reset_parser = joelab_images_subparsers.add_parser('reset', parents=[common_parser],

@@ -1,6 +1,6 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 # License: MIT
-# Copyright Joe Security 2018
+# Copyright Joe Security 2023
 
 """
 jbxapi.py serves two purposes.

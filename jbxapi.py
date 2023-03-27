@@ -122,8 +122,6 @@ submission_defaults = {
 
     ## JOE SANDBOX CLOUD EXCLUSIVE PARAMETERS
 
-    # export the report to Joe Sandbox View
-    'export-to-jbxview': UnsetBool,
     # lookup the reputation of URLs and domains (Requires sending URLs third-party services.)
     'url-reputation': UnsetBool,
     # Delete the analysis after X days
@@ -140,6 +138,7 @@ submission_defaults = {
     'remote-assistance': UnsetBool,
     'remote-assistance-view-only': UnsetBool,
     'static-only': UnsetBool,
+    'export-to-jbxview': UnsetBool,
 }
 
 class JoeSandbox(object):

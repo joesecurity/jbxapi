@@ -1272,6 +1272,8 @@ def cli(argv):
     add_bool_param(params, "--live-interaction", dest="param-live-interaction",
             help="Use live interaction. Requires user interaction via the web UI. "
                  "Default off.")
+    add_bool_param(params, "--url-reputation", dest="param-url-reputation",
+            help="Lookup the reputation of URLs and domains using third-party services.")
     params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str,
             dest="param-encrypt-with-password", metavar="PASSWORD",
             help="Encrypt the analysis data with the given password")

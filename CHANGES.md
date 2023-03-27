@@ -1,3 +1,8 @@
+# Version unreleased
+
+* remove `export-to-jbxview` parameter
+* add `url-reputation` switch to the command line interface
+
 # Version 3.21.0
 
 * Add `joelab_images_capture` endpoint for capturing new images.

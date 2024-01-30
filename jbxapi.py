@@ -34,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.21.0"
+__version__ = "3.22.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -111,6 +111,8 @@ submission_defaults = {
     'apk-instrumentation': UnsetBool,
     # Perform AMSI unpacking. Only applies to Windows. Default true
     'amsi-unpacking': UnsetBool,
+    # Enables Powershell Logging. Only applies to Windows analyzer. Default false
+    'powershell-logging': UnsetBool,
     # Disable automatically chained runs. Chained runs use additional techniques based on the final run's results, e.g. run without instrumentation, or run on bare metal. Default false
     'disable-chained-runs': UnsetBool,
     # Use live interaction. Requires user interaction via the web UI. Default false
@@ -1267,6 +1269,8 @@ def cli(argv):
             help="Perform APK DEX code instrumentation. Only applies to Android analyzer. Default on.")
     add_bool_param(params, "--amsi-unpacking", dest="param-amsi-unpacking",
             help="Perform AMSI unpacking. Only applies to Windows analyzer. Default on.")
+    add_bool_param(params, "--powershell-logging", dest="param-powershell-logging",
+            help="Enables Powershell Logging. Only applies to Windows analyzer. Default off.")
     add_bool_param(params, "--no-chained-runs", dest="param-disable-chained-runs",
             help="Disable automatically chained runs. Chained runs use additional techniques based on the final run's results, e.g. run without instrumentation, or run on bare metal. Default off.")
     add_bool_param(params, "--live-interaction", dest="param-live-interaction",

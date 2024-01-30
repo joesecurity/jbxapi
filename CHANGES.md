@@ -3,6 +3,7 @@
 * remove `export-to-jbxview` parameter
 * add `url-reputation` switch to the command line interface
 * add `powershell-logging` parameter
+* remove `live-interaction` parameter
 
 # Version 3.21.0
 

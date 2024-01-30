@@ -113,8 +113,6 @@ submission_defaults = {
     'amsi-unpacking': UnsetBool,
     # Disable automatically chained runs. Chained runs use additional techniques based on the final run's results, e.g. run without instrumentation, or run on bare metal. Default false
     'disable-chained-runs': UnsetBool,
-    # Use live interaction. Requires user interaction via the web UI. Default false
-    'live-interaction': UnsetBool,
     # encryption password for analyses
     'encrypt-with-password': None,
     # choose the browser for URL analyses
@@ -1269,9 +1267,6 @@ def cli(argv):
             help="Perform AMSI unpacking. Only applies to Windows analyzer. Default on.")
     add_bool_param(params, "--no-chained-runs", dest="param-disable-chained-runs",
             help="Disable automatically chained runs. Chained runs use additional techniques based on the final run's results, e.g. run without instrumentation, or run on bare metal. Default off.")
-    add_bool_param(params, "--live-interaction", dest="param-live-interaction",
-            help="Use live interaction. Requires user interaction via the web UI. "
-                 "Default off.")
     add_bool_param(params, "--url-reputation", dest="param-url-reputation",
             help="Lookup the reputation of URLs and domains using third-party services.")
     params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str,

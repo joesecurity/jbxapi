@@ -2,8 +2,6 @@
 
 # API Wrapper
 
-⚠ There have been some breaking changes in v3.0.0, please see [CHANGES.md](CHANGES.md).
-
 The Joe Sandbox API Wrapper enables you to fully integrate Joe Sandbox into your malware analysis framework. Joe Sandbox is a deep malware analysis platform for analyzing malicious files.
 
 You can use this wrapper with
@@ -27,10 +25,6 @@ The code is written in Python and licensed under MIT.
 ## With Pip
 
     pip install jbxapi
-
-⚠ On-premise installations with Joe Sandbox v25 or older should use the following version:
-
-    pip install jbxapi==2.10.1
 
 For upgrading `jbxapi` to a more recent version, use
 

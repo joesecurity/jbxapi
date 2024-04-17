@@ -115,6 +115,10 @@ submission_defaults = {
     'powershell-logging': UnsetBool,
     # Disable automatically chained runs. Chained runs use additional techniques based on the final run's results, e.g. run without instrumentation, or run on bare metal. Default false
     'disable-chained-runs': UnsetBool,
+    # Use live interaction. Requires user interaction via the web UI. Default false
+    'live-interaction': UnsetBool,
+    # Accepting the live interaction policy. Required when using live interaction. Default false
+    'accept-live-interaction-policy': UnsetBool,
     # encryption password for analyses
     'encrypt-with-password': None,
     # choose the browser for URL analyses
@@ -1271,6 +1275,18 @@ def cli(argv):
             help="Enables Powershell Logging. Only applies to Windows analyzer. Default off.")
     add_bool_param(params, "--no-chained-runs", dest="param-disable-chained-runs",
             help="Disable automatically chained runs. Chained runs use additional techniques based on the final run's results, e.g. run without instrumentation, or run on bare metal. Default off.")
+    add_bool_param(params, "--live-interaction", dest="param-live-interaction",
+            help="Use live interaction. Requires user interaction via the web UI. "
+                 "Default off.")
+    add_bool_param(params, "--accept-live-interaction-policy", dest="param-accept-live-interaction-policy",
+            help="""Accepts the following live interaction policy:
+                    Executing malware samples correctly is a complex task. Malware can be embedded in complex installers which cannot be automated.
+			        Malware might be executed only if a specific button in a Microsoft Office document is clicked.
+			        You can use Live Interaction to solve this problem.
+			        The Live Interaction option will provide you (one session per analysis) <b>access to the analysis machine via VNC.
+			        Once connected you can manually execute a malware sample (PE file, Document, URL, etc) via keyboard or mouse input.
+			        You hereby acknowledge to only use the Live Interaction option to start malware samples or simulate user behavior (e.g. click on security dialogs, activate macros, etc).
+        """)
     add_bool_param(params, "--url-reputation", dest="param-url-reputation",
             help="Lookup the reputation of URLs and domains using third-party services.")
     params.add_argument("--encrypt-with-password", "--encrypt", type=_cli_bytes_from_str,

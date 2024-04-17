@@ -1,3 +1,8 @@
+# Version 3.23.0
+
+* The `live-interaction` option is back. Once an analysis is running, a link
+  to the remote assistance interface is returned in the `analysis` endpoint.
+
 # Version 3.22.0
 
 * remove `export-to-jbxview` parameter

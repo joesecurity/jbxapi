@@ -623,6 +623,30 @@ class JoeSandbox(object):
         response = self._post(self.apiurl + "/v2/server/languages_and_locales", data={'apikey': self.apikey})
 
         return self._raise_or_extract(response)
+    
+    def security_log_download(self, days=30):
+        """
+        Download the security log. This route is only available to admin users.
+
+        Parameters:
+            days: number of days the log should cover - default: 30
+        """
+        _file = io.BytesIO()
+        response = self._post(self.apiurl + "/v2/securitylog/download", data={
+            'apikey': self.apikey,
+            'days' : days
+        })
+
+        if not response.ok:
+            self._raise_or_extract(response)
+
+        try:
+            for chunk in response.iter_content(1024):
+                _file.write(chunk)
+        except requests.exceptions.RequestException as e:
+            raise ConnectionError(e)
+
+        return json.loads(_file.getvalue().decode('utf-8'))
 
     def joelab_machine_info(self, machine):
         """
@@ -1033,6 +1057,9 @@ def cli(argv):
     def server_languages_and_locales(joe, args):
         print_json(joe.server_languages_and_locales())
 
+    def security_log_download(joe, args):
+        print_json(joe.security_log_download(args.days))
+
     def analysis_report(joe, args):
         (_, report) = joe.analysis_download(args.webid, type="irjsonfixed", run=args.run, password=args.password)
         try:
@@ -1423,6 +1450,18 @@ def cli(argv):
     server_langloc_parser = server_subparsers.add_parser('languages_and_locales', parents=[common_parser],
             help="Show available languages and locales for Windows.")
     server_langloc_parser.set_defaults(func=server_languages_and_locales)
+
+    # securitylog
+    securitylog_parser = subparsers.add_parser('securitylog',
+            help="Query security log")
+    securitylog_subparsers = securitylog_parser.add_subparsers(metavar="<server command>", title="securitylog commands")
+    securitylog_subparsers.required = True
+
+    # securitylog download
+    security_log_download_parser = securitylog_subparsers.add_parser('download', parents=[common_parser], 
+            help="Download the security log. Route only available to admins.")
+    security_log_download_parser.add_argument("--days", help="number of days the log should cover - default 30")
+    security_log_download_parser.set_defaults(func=security_log_download)
 
     # joelab <command>
     joelab_parser = subparsers.add_parser('joelab',

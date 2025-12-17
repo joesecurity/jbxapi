@@ -34,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.23.0"
+__version__ = "3.24.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -128,6 +128,8 @@ submission_defaults = {
     'url-reputation': UnsetBool,
     # Delete the analysis after X days
     'delete-after-days': None,
+    # Proxy mode config name
+    'proxy-mode-config': None,
 
     ## ON PREMISE EXCLUSIVE PARAMETERS
 
@@ -317,7 +319,7 @@ class JoeSandbox(object):
         params = copy.copy(params)
         params['url'] = url
         return self._submit(params, _extra_params=_extra_params)
-        
+
     def submit_command_line(self, command_line, params={}, _extra_params={}):
         """
         Submit a commandline for analysis.
@@ -325,7 +327,7 @@ class JoeSandbox(object):
         self._check_user_parameters(params)
         params = copy.copy(params)
         params['command-line'] = command_line
-        return self._submit(params, _extra_params=_extra_params)        
+        return self._submit(params, _extra_params=_extra_params)
 
     def submit_cookbook(self, cookbook, params={}, _extra_params={}):
         """
@@ -641,7 +643,7 @@ class JoeSandbox(object):
                                                                              'machine': machine})
 
         return self._raise_or_extract(response)
-       
+
     def joelab_images_capture(self, machine, image=None):
         """
         Capture disk image of a machine.
@@ -650,7 +652,7 @@ class JoeSandbox(object):
                                                                              'machine': machine,
                                                                              'accept-tac': "1" if self.accept_tac else "0",
                                                                              'image': image})
-        return self._raise_or_extract(response)       
+        return self._raise_or_extract(response)
 
     def joelab_images_reset(self, machine, image=None):
         """
@@ -984,7 +986,7 @@ def cli(argv):
         elif args.sample_url_mode:
             print_json(joe.submit_sample_url(args.sample, params=params, _extra_params=extra_params))
         elif args.command_line_mode:
-            print_json(joe.submit_command_line(args.sample, params=params, _extra_params=extra_params))            
+            print_json(joe.submit_command_line(args.sample, params=params, _extra_params=extra_params))
         else:
             try:
                 f_cookbook = open(args.cookbook, "rb") if args.cookbook is not None else None
@@ -1107,7 +1109,7 @@ def cli(argv):
         print_json(joe.joelab_images_list(args.machine))
 
     def joelab_images_capture(joe, args):
-        print_json(joe.joelab_images_capture(args.machine, args.image))        
+        print_json(joe.joelab_images_capture(args.machine, args.image))
 
     def joelab_images_reset(joe, args):
         print_json(joe.joelab_images_reset(args.machine, args.image))
@@ -1183,7 +1185,7 @@ def cli(argv):
             help="Download the sample from the given url.")
     # command line submissions
     submission_mode_parser.add_argument('--command-line', dest="command_line_mode", action="store_true",
-            help="Run the command using cmd.exe.")            
+            help="Run the command using cmd.exe.")
     # cookbook submission
     submission_mode_parser.add_argument('--cookbook', dest="cookbook",
             help="Use the given cookbook.")
@@ -1257,6 +1259,8 @@ def cli(argv):
             help="Add tags to the analysis.")
     params.add_argument("--delete-after-days", "--delafter", type=int, dest="param-delete-after-days", metavar="DAYS",
             help="Delete analysis after X days.")
+    params.add_argument("--proxy-mode-config", "--proxyconfig", dest="param-proxy-mode-config", metavar="NAME",
+            help="Use the proxy config with this name.")
     params.add_argument("--browser", dest="param-browser", metavar="BROWSER",
             help="Browser for URL analyses.")
     add_bool_param(params, "--fast-mode", dest="param-fast-mode",

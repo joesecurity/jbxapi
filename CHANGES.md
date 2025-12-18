@@ -1,3 +1,7 @@
+# Version 3.24.0
+
+* add `proxy-mode-config` parameter
+
 # Version 3.23.0
 
 * The `live-interaction` option is back. Once an analysis is running, a link

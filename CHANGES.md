@@ -1,5 +1,9 @@
 # Version 3.24.0
 
+* add `reverser` and `analyze-on-reverser` parameters
+
+# Version 3.24.0
+
 * add `proxy-mode-config` parameter
 
 # Version 3.23.0

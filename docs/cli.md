@@ -65,6 +65,31 @@ submission commands:
 }
 ```
 
+## Joe Reverser
+
+Request an additional Joe Reverser analysis with `--analyze-on-reverser`
+(or explicitly disable it with `--no-analyze-on-reverser`):
+
+```bash
+jbxapi submit sample.exe --analyze-on-reverser
+```
+
+Use `--reverser` to include Reverser results in lists, searches and submission info:
+
+```bash
+jbxapi analysis list --reverser
+jbxapi analysis search sample.exe --reverser
+jbxapi submission info 140 --reverser
+```
+
+Results preserve `analysis_type` (`sandbox` or `reverser`). Reverser webids are
+UUID strings and can be used directly with `analysis info` and `analysis download`.
+Reverser supports downloads of `html`, `pdf`, `chathtml`, `chatpdf` and `sample`:
+
+```bash
+jbxapi analysis download cfc1af7c-2f42-4e4b-9fc7-9260362cec09 chathtml chatpdf
+```
+
 ## Getting information about an submission
 
 The submission id can be used to track the status:

@@ -1,4 +1,4 @@
-# Version 3.24.0
+# Version 3.25.0
 
 * add `reverser` and `analyze-on-reverser` parameters
 

@@ -166,8 +166,7 @@ class JoeSandbox(object):
                       https://requests.readthedocs.io/en/latest/user/advanced/#proxies
           user_agent: The user agent. Use this when you write an integration with Joe Sandbox
                       so that it is possible to track how often an integration is being used.
-          reverser:   Include Joe Reverser analyses in submission info, analysis lists and
-                      searches. Always sends include-reverser-analyses (default False).
+          reverser:   Include Joe Reverser analyses
         """
 
         if apikey is None:
@@ -518,8 +517,7 @@ class JoeSandbox(object):
 
         Parameters:
             webid:    the webid of the analysis
-            type:     the report type, e.g. 'html', 'bins'
-                      Reverser supports 'html', 'pdf', 'chathtml', 'chatpdf' and 'sample'.
+            type:     the report type, e.g. 'html', 'bins' 
             run:      specify the run. If it is None, let Joe Sandbox pick one
             file:     a writable file-like object (When omitted, the method returns
                       the data as a bytes object.)
@@ -588,7 +586,6 @@ class JoeSandbox(object):
     def analysis_search(self, query):
         """
         Returns analysis objects matching the given query, including analysis_type
-        ('sandbox' or 'reverser') on servers supporting Joe Reverser.
 
         Searches in MD5, SHA1, SHA256, filename, cookbook name, comment, url and report id.
         """
@@ -1173,7 +1170,7 @@ def cli(argv):
     common_group.add_argument('--no-check-certificate', action="store_true",
         help="Do not check the server certificate.")
     common_group.add_argument('--reverser', action='store_true',
-        help="Include Joe Reverser analyses in submission info, analysis lists and searches.")
+        help="Reverser analyses are hidden by default. Setting this includes them.")
     common_group.add_argument('--version', action='store_true',
             help="Show version and exit.")
 
@@ -1230,7 +1227,7 @@ def cli(argv):
         parser.add_argument(*negative_names, dest=dest, action="store_false", default=None)
 
     add_bool_param(params, "--analyze-on-reverser", dest="param-analyze-on-reverser",
-            help="Let Joe Reverser analyze the sample in addition (default false).")
+            help="Analyze the sample in Joe Reverser in addition to the sandbox.")
     params.add_argument("--comments", dest="param-comments", metavar="TEXT",
             help="Comment for the analysis.")
     params.add_argument("--system", dest="param-systems", action="append", metavar="SYSTEM",

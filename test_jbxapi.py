@@ -48,6 +48,65 @@ class MockedResponse(object):
 successful_submission = {"data": {"submission_id": "1"}}
 
 
+@pytest.mark.parametrize("options, expected", [({}, "0"), ({"reverser": False}, "0"), ({"reverser": True}, "1")])
+def test_reverser_routes(options, expected, monkeypatch):
+    joe = jbxapi.JoeSandbox(**options)
+    analysis = {"webid": "cfc1af7c-2f42-4e4b-9fc7-9260362cec09", "analysis_type": "reverser"}
+    mock = MockedResponse(ok=True, json={"data": [analysis]})
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+
+    assert joe.analysis_list() == [analysis]
+    assert joe.analysis_search("sample") == [analysis]
+    submission = {"analyses": [analysis], "most_relevant_analysis": analysis}
+    mock._json = {"data": submission}
+    assert joe.submission_info("1") == submission
+    assert len(mock.requests) == 3
+    assert all(r.data["include-reverser-analyses"] == expected for r in mock.requests)
+
+    mock._json = {"data": analysis}
+    assert joe.analysis_info(analysis["webid"]) == analysis
+    assert "include-reverser-analyses" not in mock.requests[-1].data
+
+
+def test_reverser_pagination(monkeypatch):
+    joe = jbxapi.JoeSandbox(reverser=True)
+    mock = MockedResponse(ok=True, json={"data": [{"webid": "1", "analysis_type": "sandbox"}],
+                                       "pagination": {"next": "next-page"}})
+    second = MockedResponse(ok=True, json={"data": [{"webid": "uuid", "analysis_type": "reverser"}]})
+    pages = iter([mock, second])
+    monkeypatch.setattr(joe.session, "post", lambda *args, **kwargs: next(pages)(*args, **kwargs))
+    assert joe.analysis_list() == mock._json["data"] + second._json["data"]
+    assert second.requests[0].data["pagination_next"] == "next-page"
+    assert all(r.data["include-reverser-analyses"] == "1" for r in mock.requests + second.requests)
+
+
+@pytest.mark.parametrize("value, expected", [(True, "1"), (False, "0"), (None, None)])
+def test_reverser_submission(value, expected, monkeypatch):
+    mock = MockedResponse(ok=True, json=successful_submission)
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+    jbxapi.JoeSandbox().submit_sample(io.BytesIO(b"sample"),
+        params={"analyze-on-reverser": value}, _chunked_upload=False)
+    assert mock.requests[0].data["analyze-on-reverser"] == expected
+
+
+@pytest.mark.parametrize("flag, expected", [("--analyze-on-reverser", "1"), ("--no-analyze-on-reverser", "0")])
+def test_cli_reverser_submission(flag, expected, monkeypatch):
+    mock = MockedResponse(ok=True, json=successful_submission)
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+    jbxapi.cli(["submit", "--url", "https://example.net", flag])
+    assert mock.requests[0].data["analyze-on-reverser"] == expected
+
+
+@pytest.mark.parametrize("command", [["analysis", "list"], ["analysis", "search", "sample"],
+                                     ["submission", "info", "1"]])
+@pytest.mark.parametrize("flags, expected", [([], "0"), (["--reverser"], "1")])
+def test_cli_reverser(command, flags, expected, monkeypatch):
+    mock = MockedResponse(ok=True, json={"data": []})
+    monkeypatch.setattr("requests.sessions.Session.post", mock)
+    jbxapi.cli(command + flags)
+    assert mock.requests[0].data["include-reverser-analyses"] == expected
+
+
 def test_file_submission(joe, monkeypatch):
     mock = MockedResponse(ok=True, json=successful_submission)
     monkeypatch.setattr("requests.sessions.Session.post", mock)

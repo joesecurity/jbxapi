@@ -34,7 +34,7 @@ except ImportError:
     print("Please install the Python 'requests' package via pip", file=sys.stderr)
     sys.exit(1)
 
-__version__ = "3.24.0"
+__version__ = "3.25.0"
 
 # API URL.
 API_URL = "https://jbxcloud.joesecurity.org/api"
@@ -56,6 +56,8 @@ submission_defaults = {
     # system selection, set to None for automatic selection
     # 'systems': ('w7', 'w7x64'),
     'systems': None,
+    # Let Joe Reverser analyze the sample in addition. Default false.
+    'analyze-on-reverser': UnsetBool,
     # comment for an analysis
     'comments': None,
     # maximum analysis time
@@ -148,7 +150,7 @@ submission_defaults = {
 class JoeSandbox(object):
     def __init__(self, apikey=None, apiurl=None, accept_tac=None,
                        timeout=None, verify_ssl=True, retries=3,
-                       proxies=None, user_agent=None):
+                       proxies=None, user_agent=None, reverser=False):
         """
         Create a JoeSandbox object.
 
@@ -164,6 +166,8 @@ class JoeSandbox(object):
                       https://requests.readthedocs.io/en/latest/user/advanced/#proxies
           user_agent: The user agent. Use this when you write an integration with Joe Sandbox
                       so that it is possible to track how often an integration is being used.
+          reverser:   Include Joe Reverser analyses in submission info, analysis lists and
+                      searches. Always sends include-reverser-analyses (default False).
         """
 
         if apikey is None:
@@ -183,6 +187,7 @@ class JoeSandbox(object):
         self.accept_tac = accept_tac
         self.timeout = timeout
         self.retries = retries
+        self.reverser = reverser
 
         if user_agent:
             user_agent += " (jbxapi.py {})".format(__version__)
@@ -214,6 +219,7 @@ class JoeSandbox(object):
             response = self._post(self.apiurl + '/v2/analysis/list', data={
                 "apikey": self.apikey,
                 "pagination": "1",
+                "include-reverser-analyses": _to_bool(self.reverser),
                 "pagination_next": pagination_next,
             })
 
@@ -462,7 +468,11 @@ class JoeSandbox(object):
         """
         Returns information about a submission including all the analysis ids.
         """
-        response = self._post(self.apiurl + '/v2/submission/info', data={'apikey': self.apikey, 'submission_id': submission_id})
+        response = self._post(self.apiurl + '/v2/submission/info', data={
+            'apikey': self.apikey,
+            'submission_id': submission_id,
+            'include-reverser-analyses': _to_bool(self.reverser),
+        })
 
         return self._raise_or_extract(response)
 
@@ -509,6 +519,7 @@ class JoeSandbox(object):
         Parameters:
             webid:    the webid of the analysis
             type:     the report type, e.g. 'html', 'bins'
+                      Reverser supports 'html', 'pdf', 'chathtml', 'chatpdf' and 'sample'.
             run:      specify the run. If it is None, let Joe Sandbox pick one
             file:     a writable file-like object (When omitted, the method returns
                       the data as a bytes object.)
@@ -576,11 +587,16 @@ class JoeSandbox(object):
 
     def analysis_search(self, query):
         """
-        Lists the webids of the analyses that match the given query.
+        Returns analysis objects matching the given query, including analysis_type
+        ('sandbox' or 'reverser') on servers supporting Joe Reverser.
 
         Searches in MD5, SHA1, SHA256, filename, cookbook name, comment, url and report id.
         """
-        response = self._post(self.apiurl + "/v2/analysis/search", data={'apikey': self.apikey, 'q': query})
+        response = self._post(self.apiurl + "/v2/analysis/search", data={
+            'apikey': self.apikey,
+            'q': query,
+            'include-reverser-analyses': _to_bool(self.reverser),
+        })
 
         return self._raise_or_extract(response)
 
@@ -1156,6 +1172,8 @@ def cli(argv):
         "(You can also set the env. variable ACCEPT_TAC=1.)")
     common_group.add_argument('--no-check-certificate', action="store_true",
         help="Do not check the server certificate.")
+    common_group.add_argument('--reverser', action='store_true',
+        help="Include Joe Reverser analyses in submission info, analysis lists and searches.")
     common_group.add_argument('--version', action='store_true',
             help="Show version and exit.")
 
@@ -1211,6 +1229,8 @@ def cli(argv):
         parser.add_argument(*names, dest=dest, action="store_true", default=None, help=help)
         parser.add_argument(*negative_names, dest=dest, action="store_false", default=None)
 
+    add_bool_param(params, "--analyze-on-reverser", dest="param-analyze-on-reverser",
+            help="Let Joe Reverser analyze the sample in addition (default false).")
     params.add_argument("--comments", dest="param-comments", metavar="TEXT",
             help="Comment for the analysis.")
     params.add_argument("--system", dest="param-systems", action="append", metavar="SYSTEM",
@@ -1570,6 +1590,7 @@ def cli(argv):
                      apiurl=args.apiurl,
                      accept_tac=args.accept_tac,
                      user_agent="CLI",
+                     reverser=args.reverser,
                      verify_ssl=not args.no_check_certificate)
     try:
         args.func(joe, args)

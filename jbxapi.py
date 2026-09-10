@@ -150,7 +150,7 @@ submission_defaults = {
 class JoeSandbox(object):
     def __init__(self, apikey=None, apiurl=None, accept_tac=None,
                        timeout=None, verify_ssl=True, retries=3,
-                       proxies=None, user_agent=None, reverser=False):
+                       proxies=None, user_agent=None, reverser=None):
         """
         Create a JoeSandbox object.
 
@@ -166,7 +166,8 @@ class JoeSandbox(object):
                       https://requests.readthedocs.io/en/latest/user/advanced/#proxies
           user_agent: The user agent. Use this when you write an integration with Joe Sandbox
                       so that it is possible to track how often an integration is being used.
-          reverser:   Include Joe Reverser analyses
+          reverser:   Include Joe Reverser analyses. None (default) omits the API parameter
+                      for compatibility with older installations; True/False sends 1/0.
         """
 
         if apikey is None:
@@ -1169,7 +1170,7 @@ def cli(argv):
         "(You can also set the env. variable ACCEPT_TAC=1.)")
     common_group.add_argument('--no-check-certificate', action="store_true",
         help="Do not check the server certificate.")
-    common_group.add_argument('--reverser', action='store_true',
+    common_group.add_argument('--reverser', action='store_true', default=None,
         help="Reverser analyses are hidden by default. Setting this includes them.")
     common_group.add_argument('--version', action='store_true',
             help="Show version and exit.")

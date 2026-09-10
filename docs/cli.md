@@ -76,6 +76,9 @@ jbxapi submit sample.exe --analyze-on-reverser
 
 Use `--reverser` to include Reverser results in lists, searches and submission info:
 
+Without this flag, the client omits `include-reverser-analyses` from the API
+request for compatibility with older installations.
+
 ```bash
 jbxapi analysis list --reverser
 jbxapi analysis search sample.exe --reverser

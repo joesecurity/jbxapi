@@ -166,8 +166,7 @@ class JoeSandbox(object):
                       https://requests.readthedocs.io/en/latest/user/advanced/#proxies
           user_agent: The user agent. Use this when you write an integration with Joe Sandbox
                       so that it is possible to track how often an integration is being used.
-          reverser:   Include Joe Reverser analyses. None (default) omits the API parameter
-                      for compatibility with older installations; True/False sends 1/0.
+          reverser:   Include Joe Reverser analyses.
         """
 
         if apikey is None:

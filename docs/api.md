@@ -21,15 +21,9 @@ JoeException
 
 Pass `reverser=True` to `JoeSandbox` to include Joe Reverser analyses in
 `submission_info`, `analysis_list`, `analysis_list_paged` and `analysis_search`.
-The default, `reverser=None`, omits `include-reverser-analyses` from the HTTP
-request for compatibility with older installations. Explicit `True` or `False`
-sends `"1"` or `"0"`, respectively, on these routes.
 
 To request an additional Reverser analysis, submit with
 `params={"analyze-on-reverser": True}`. This is independent of the inclusion setting.
-Responses preserve `analysis_type` (`"sandbox"` or `"reverser"`), including in
-`most_relevant_analysis`, and Reverser webids are strings containing UUIDs.
-Use `analysis_info` or `analysis_download` with a Reverser webid directly.
 
 ```python
 class JoeSandbox(builtins.object)

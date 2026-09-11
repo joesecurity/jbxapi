@@ -7,6 +7,7 @@ import io
 import pytest
 import tempfile
 import shutil
+import requests
 
 import jbxapi
 
@@ -48,7 +49,8 @@ class MockedResponse(object):
 successful_submission = {"data": {"submission_id": "1"}}
 
 
-@pytest.mark.parametrize("options, expected", [({}, "0"), ({"reverser": False}, "0"), ({"reverser": True}, "1")])
+@pytest.mark.parametrize("options, expected", [({}, None), ({"reverser": None}, None),
+                                              ({"reverser": False}, "0"), ({"reverser": True}, "1")])
 def test_reverser_routes(options, expected, monkeypatch):
     joe = jbxapi.JoeSandbox(**options)
     analysis = {"webid": "cfc1af7c-2f42-4e4b-9fc7-9260362cec09", "analysis_type": "reverser"}
@@ -62,6 +64,12 @@ def test_reverser_routes(options, expected, monkeypatch):
     assert joe.submission_info("1") == submission
     assert len(mock.requests) == 3
     assert all(r.data["include-reverser-analyses"] == expected for r in mock.requests)
+    for request in mock.requests:
+        body = requests.Request("POST", request.url, data=request.data).prepare().body
+        if expected is None:
+            assert "include-reverser-analyses" not in body
+        else:
+            assert "include-reverser-analyses=" + expected in body
 
     mock._json = {"data": analysis}
     assert joe.analysis_info(analysis["webid"]) == analysis
@@ -99,12 +107,18 @@ def test_cli_reverser_submission(flag, expected, monkeypatch):
 
 @pytest.mark.parametrize("command", [["analysis", "list"], ["analysis", "search", "sample"],
                                      ["submission", "info", "1"]])
-@pytest.mark.parametrize("flags, expected", [([], "0"), (["--reverser"], "1")])
+@pytest.mark.parametrize("flags, expected", [([], None), (["--reverser"], "1")])
 def test_cli_reverser(command, flags, expected, monkeypatch):
     mock = MockedResponse(ok=True, json={"data": []})
     monkeypatch.setattr("requests.sessions.Session.post", mock)
     jbxapi.cli(command + flags)
     assert mock.requests[0].data["include-reverser-analyses"] == expected
+    request = mock.requests[0]
+    body = requests.Request("POST", request.url, data=request.data).prepare().body
+    if expected is None:
+        assert "include-reverser-analyses" not in body
+    else:
+        assert "include-reverser-analyses=" + expected in body
 
 
 def test_file_submission(joe, monkeypatch):

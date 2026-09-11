@@ -21,23 +21,17 @@ JoeException
 
 Pass `reverser=True` to `JoeSandbox` to include Joe Reverser analyses in
 `submission_info`, `analysis_list`, `analysis_list_paged` and `analysis_search`.
-The client always sends `include-reverser-analyses` as `"1"` or `"0"` on these
-routes; the default is `False`.
 
 To request an additional Reverser analysis, submit with
 `params={"analyze-on-reverser": True}`. This is independent of the inclusion setting.
-Responses preserve `analysis_type` (`"sandbox"` or `"reverser"`), including in
-`most_relevant_analysis`, and Reverser webids are strings containing UUIDs.
-Use `analysis_info` or `analysis_download` with a Reverser webid directly.
-Supported Reverser download types are `html`, `pdf`, `chathtml`, `chatpdf` and `sample`.
 
 ```python
 class JoeSandbox(builtins.object)
- |  JoeSandbox(apikey=None, apiurl=None, accept_tac=None, timeout=None, verify_ssl=True, retries=3, proxies=None, user_agent=None, reverser=False)
+ |  JoeSandbox(apikey=None, apiurl=None, accept_tac=None, timeout=None, verify_ssl=True, retries=3, proxies=None, user_agent=None, reverser=None)
  |  
  |  Methods defined here:
  |  
- |  __init__(self, apikey=None, apiurl=None, accept_tac=None, timeout=None, verify_ssl=True, retries=3, proxies=None, user_agent=None, reverser=False)
+ |  __init__(self, apikey=None, apiurl=None, accept_tac=None, timeout=None, verify_ssl=True, retries=3, proxies=None, user_agent=None, reverser=None)
  |      Create a JoeSandbox object.
  |      
  |      Parameters:
